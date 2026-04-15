@@ -4,22 +4,14 @@ from app.domain.services.feature_service import FeatureService
 from app.domain.services.simulation_service import SimulationService
 from app.domain.services.training_service import TrainingService
 
-from app.domain.repositories.feature_repository import FeatureRepository
-from app.domain.repositories.event_repository import EventRepository
-from app.domain.repositories.model_repository import ModelRepository
-from app.infrastructure.repositories.in_memory_event_repository import (
-    InMemoryEventRepository,
-)
-from app.infrastructure.repositories.in_memory_feature_repository import (
-    InMemoryFeatureRepository,
-)
-from app.infrastructure.repositories.in_memory_model_repository import (
-    InMemoryModelRepository,
-)
+from app.infrastructure.db import SessionLocal, init_db
+from app.infrastructure.repositories.sqlite_event_repository import SqliteEventRepository
+from app.infrastructure.repositories.sqlite_feature_repository import SqliteFeatureRepository
+from app.infrastructure.repositories.sqlite_model_repository import SqliteModelRepository
 
-feature_repository: FeatureRepository = InMemoryFeatureRepository()
-event_repository: EventRepository = InMemoryEventRepository()
-model_repository: ModelRepository = InMemoryModelRepository()
+feature_repository = SqliteFeatureRepository(SessionLocal)
+event_repository = SqliteEventRepository(SessionLocal)
+model_repository = SqliteModelRepository(SessionLocal)
 
 feature_service = FeatureService(feature_repository)
 event_service = EventService(event_repository)
