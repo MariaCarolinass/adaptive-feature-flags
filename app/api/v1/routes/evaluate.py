@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException, status
 
+from app.core.exceptions import AppError, to_http_exception
+from app.core.logging import get_logger
 from app.dependencies import evaluation_service
 from app.schemas.evaluate import EvaluateRequest, EvaluateResponse
 
-router = APIRouter(prefix="/evaluation", tags=["evaluation"])
+router = APIRouter(prefix="/evaluate", tags=["evaluation"])
+logger = get_logger(__name__)
 
 
 @router.post("", response_model=EvaluateResponse)
@@ -13,34 +16,8 @@ def evaluate(request: EvaluateRequest):
             feature_key=request.feature_key,
             user=request.user,
         )
+    except AppError as e:
+        raise to_http_exception(e)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-@router.get("/{evaluation_id}", response_model=EvaluateResponse)
-def retrieve(evaluation_id: str):
-    try:
-        return evaluation_service.get_evaluation_by_id(evaluation_id)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-@router.put("/{evaluation_id}", response_model=EvaluateResponse)
-def update(evaluation_id: str, request: EvaluateRequest):
-    try:
-        return evaluation_service.update_evaluation(evaluation_id, request)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-@router.delete("/{evaluation_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(evaluation_id: str):
-    try:
-        evaluation_service.delete_evaluation(evaluation_id)
-        return {}
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-@router.get("", response_model=list[EvaluateResponse])
-def list():
-    try:
-        return evaluation_service.list_evaluations()
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.exception("Erro ao avaliar feature")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
