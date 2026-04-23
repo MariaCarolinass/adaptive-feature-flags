@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.core.exceptions import AppError, NotFoundError, to_http_exception
@@ -11,7 +9,14 @@ router = APIRouter(prefix="/events", tags=["events"])
 logger = get_logger(__name__)
 
 
-@router.post("", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=EventResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create event",
+    description="Registers a new event for a feature.",
+    response_description="Event created successfully.",
+)
 def create(event: EventCreate):
     try:
         return event_service.create_event(
@@ -24,12 +29,18 @@ def create(event: EventCreate):
     except AppError as e:
         raise to_http_exception(e)
     except Exception as e:
-        logger.exception("Erro ao criar event")
+        logger.exception("Failed to create event")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
-@router.get("/{event_id}", response_model=EventResponse)
-def retrieve(event_id: UUID):
+@router.get(
+    "/{event_id}",
+    response_model=EventResponse,
+    summary="Get event by ID",
+    description="Returns a specific event by ID.",
+    response_description="Event found.",
+)
+def retrieve(event_id: int):
     try:
         event = event_service.get_event_by_id(event_id)
         if event is None:
@@ -38,12 +49,18 @@ def retrieve(event_id: UUID):
     except AppError as e:
         raise to_http_exception(e)
     except Exception as e:
-        logger.exception("Erro ao buscar event")
+        logger.exception("Failed to retrieve event")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
-@router.put("/{event_id}", response_model=EventResponse)
-def update(event_id: UUID, event: EventCreate):
+@router.put(
+    "/{event_id}",
+    response_model=EventResponse,
+    summary="Update event",
+    description="Updates an existing event.",
+    response_description="Event updated.",
+)
+def update(event_id: int, event: EventCreate):
     try:
         return event_service.update_event(
             event_id=event_id,
@@ -56,26 +73,37 @@ def update(event_id: UUID, event: EventCreate):
     except AppError as e:
         raise to_http_exception(e)
     except Exception as e:
-        logger.exception("Erro ao atualizar event")
+        logger.exception("Failed to update event")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
-@router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(event_id: UUID):
+@router.delete(
+    "/{event_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete event",
+    description="Deletes an existing event.",
+)
+def delete(event_id: int):
     try:
         event_service.delete_event(event_id)
     except AppError as e:
         raise to_http_exception(e)
     except Exception as e:
-        logger.exception("Erro ao remover event")
+        logger.exception("Failed to delete event")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 
-@router.get("", response_model=list[EventResponse])
+@router.get(
+    "",
+    response_model=list[EventResponse],
+    summary="List events",
+    description="Lists events with optional filters for user, feature, and event type.",
+    response_description="Filtered event list.",
+)
 def list(
-    user_id: str | None = Query(default=None),
-    feature_key: str | None = Query(default=None),
-    event_type: str | None = Query(default=None),
+    user_id: str | None = Query(default=None, description="Filter by user ID."),
+    feature_key: str | None = Query(default=None, description="Filter by feature key."),
+    event_type: str | None = Query(default=None, description="Filter by event type."),
 ):
     try:
         return event_service.list_events(
@@ -86,5 +114,5 @@ def list(
     except AppError as e:
         raise to_http_exception(e)
     except Exception as e:
-        logger.exception("Erro ao listar events")
+        logger.exception("Failed to list events")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
