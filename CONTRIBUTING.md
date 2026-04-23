@@ -40,6 +40,16 @@ Siga o `AGENT.md`. Resumo:
 - **Erros**: use exceções tipadas em `app/core/exceptions.py` e mapeie com `to_http_exception()`
 - **Segurança**: não vazar detalhes internos em `500`, respeitar `TRUSTED_HOSTS` e `CORS_ALLOWED_ORIGINS`
 
+### Checklist de variáveis de ambiente
+
+Sempre que adicionar, renomear ou remover uma configuração em `app/core/config.py`, sincronize:
+
+- `app/core/config.py` (fonte de verdade do runtime)
+- `.env.example` (template para setup local)
+- `README.md` (documentação para uso/operação)
+
+Também valide o formato e tipo esperado no README quando a variável usar JSON (listas, objetos) ou booleanos.
+
 ## Pull Requests
 
 - **Escopo pequeno**: PRs menores são mais fáceis de revisar
