@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from uuid import UUID
 
 import pytest
 
@@ -69,7 +68,7 @@ def test_update_event_requires_existing_id(session_factory) -> None:
 
     with pytest.raises(NotFoundError, match="Event not found"):
         service.update_event(
-            event_id=UUID("00000000-0000-0000-0000-000000000000"),
+            event_id=999999,
             user_id="u1",
             feature_key="f1",
             event_type="view",

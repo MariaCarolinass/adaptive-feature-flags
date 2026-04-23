@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.domain.entities.model_metadata import ModelMetadata
 from app.domain.repositories.model_repository import ModelRepository
-from app.infrastructure.models import ModelMetadataModel
+from app.infrastructure.db.models import ModelMetadataModel
 
 
 class SqliteModelRepository(ModelRepository):
@@ -25,6 +25,7 @@ class SqliteModelRepository(ModelRepository):
             row.model_version = metadata.model_version
             row.trained_at = metadata.trained_at
             row.metrics = metadata.metrics
+            row.artifact_path = metadata.artifact_path
 
             session.commit()
         return metadata
@@ -39,6 +40,7 @@ class SqliteModelRepository(ModelRepository):
                     model_version=None,
                     trained_at=None,
                     metrics=None,
+                    artifact_path=None,
                 )
 
             return ModelMetadata(
@@ -47,5 +49,6 @@ class SqliteModelRepository(ModelRepository):
                 model_version=row.model_version,
                 trained_at=row.trained_at,
                 metrics=row.metrics,
+                artifact_path=row.artifact_path,
             )
 

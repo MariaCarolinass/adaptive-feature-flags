@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 import pytest
 
 from app.core.exceptions import ConflictError, NotFoundError
@@ -71,7 +69,7 @@ def test_update_feature_requires_existing_id(session_factory) -> None:
 
     with pytest.raises(NotFoundError, match="Feature not found"):
         service.update_feature(
-            feature_id=UUID("00000000-0000-0000-0000-000000000000"),
+            feature_id=999999,
             name="A",
             key="a",
             description=None,

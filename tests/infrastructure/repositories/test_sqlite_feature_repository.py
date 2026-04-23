@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from uuid import uuid4
 
 import pytest
 
@@ -20,7 +19,7 @@ def _feature(
 ) -> Feature:
     now = datetime.now(timezone.utc)
     return Feature(
-        id=uuid4(),
+        id=None,
         name=name,
         key=key,
         description="descricao",
@@ -40,6 +39,7 @@ def test_create_and_get_feature(session_factory) -> None:
     by_id = repo.get_by_id(created.id)
     by_key = repo.get_by_key(created.key)
 
+    assert isinstance(created.id, int)
     assert by_id is not None
     assert by_key is not None
     assert by_id.id == created.id

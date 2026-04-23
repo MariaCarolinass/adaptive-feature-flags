@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class EvaluateUser(BaseModel):
-    user_id: str
+    user_id: str = Field(description="User identifier.")
     age: int | None = Field(default=None, ge=0, le=120)
     country: str | None = None
     plan: str | None = None
@@ -10,19 +10,15 @@ class EvaluateUser(BaseModel):
 
 
 class EvaluateRequest(BaseModel):
-    feature_key: str
+    feature_key: str = Field(description="Feature key to evaluate for the user.")
     user: EvaluateUser
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "feature_key": "new_home",
+                "feature_key": "item_355908",
                 "user": {
-                    "user_id": "u123",
-                    "age": 29,
-                    "country": "BR",
-                    "plan": "premium",
-                    "days_since_signup": 45
+                    "user_id": "257597"
                 }
             }
         }
@@ -36,3 +32,16 @@ class EvaluateResponse(BaseModel):
     decision_source: str
     score: float | None = None
     model_version: str | None = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "feature_key": "item_355908",
+                "user_id": "257597",
+                "enabled": True,
+                "decision_source": "ml",
+                "score": 0.81,
+                "model_version": "v1",
+            }
+        }
+    )

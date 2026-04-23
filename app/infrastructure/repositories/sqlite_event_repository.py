@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 from app.core.exceptions import NotFoundError
 from app.domain.entities.event import Event
 from app.domain.repositories.event_repository import EventRepository
-from app.infrastructure.models import EventModel
+from app.infrastructure.db.models import EventModel
 
 
 class SqliteEventRepository(EventRepository):
@@ -18,7 +16,6 @@ class SqliteEventRepository(EventRepository):
     def create(self, event: Event) -> Event:
         with self._session_factory() as session:
             row = EventModel(
-                id=str(event.id),
                 user_id=event.user_id,
                 feature_key=event.feature_key,
                 event_type=event.event_type,
@@ -27,6 +24,8 @@ class SqliteEventRepository(EventRepository):
             )
             session.add(row)
             session.commit()
+            session.refresh(row)
+            event.id = row.id
         return event
 
     def list(
@@ -48,14 +47,16 @@ class SqliteEventRepository(EventRepository):
             rows = session.execute(stmt).scalars().all()
             return [self._to_entity(r) for r in rows]
 
-    def get_by_id(self, event_id: UUID) -> Event | None:
+    def get_by_id(self, event_id: int) -> Event | None:
         with self._session_factory() as session:
-            row = session.get(EventModel, str(event_id))
+            row = session.get(EventModel, event_id)
             return self._to_entity(row) if row is not None else None
 
     def update(self, event: Event) -> Event:
         with self._session_factory() as session:
-            row = session.get(EventModel, str(event.id))
+            if event.id is None:
+                raise NotFoundError("Event not found.")
+            row = session.get(EventModel, event.id)
             if row is None:
                 raise NotFoundError("Event not found.")
 
@@ -67,9 +68,9 @@ class SqliteEventRepository(EventRepository):
             session.commit()
         return event
 
-    def delete(self, event_id: UUID) -> bool:
+    def delete(self, event_id: int) -> bool:
         with self._session_factory() as session:
-            row = session.get(EventModel, str(event_id))
+            row = session.get(EventModel, event_id)
             if row is None:
                 return False
             session.delete(row)
@@ -79,7 +80,7 @@ class SqliteEventRepository(EventRepository):
     @staticmethod
     def _to_entity(row: EventModel) -> Event:
         return Event(
-            id=UUID(row.id),
+            id=row.id,
             user_id=row.user_id,
             feature_key=row.feature_key,
             event_type=row.event_type,

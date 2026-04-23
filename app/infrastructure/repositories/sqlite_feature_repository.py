@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 from app.core.exceptions import NotFoundError
 from app.domain.entities.feature import Feature
 from app.domain.repositories.feature_repository import FeatureRepository
-from app.infrastructure.models import FeatureModel
+from app.infrastructure.db.models import FeatureModel
 
 
 class SqliteFeatureRepository(FeatureRepository):
@@ -18,7 +16,6 @@ class SqliteFeatureRepository(FeatureRepository):
     def create(self, feature: Feature) -> Feature:
         with self._session_factory() as session:
             row = FeatureModel(
-                id=str(feature.id),
                 name=feature.name,
                 key=feature.key,
                 description=feature.description,
@@ -30,6 +27,8 @@ class SqliteFeatureRepository(FeatureRepository):
             )
             session.add(row)
             session.commit()
+            session.refresh(row)
+            feature.id = row.id
         return feature
 
     def list(self) -> list[Feature]:
@@ -37,9 +36,9 @@ class SqliteFeatureRepository(FeatureRepository):
             rows = session.execute(select(FeatureModel).order_by(FeatureModel.created_at.asc())).scalars().all()
             return [self._to_entity(r) for r in rows]
 
-    def get_by_id(self, feature_id: UUID) -> Feature | None:
+    def get_by_id(self, feature_id: int) -> Feature | None:
         with self._session_factory() as session:
-            row = session.get(FeatureModel, str(feature_id))
+            row = session.get(FeatureModel, feature_id)
             return self._to_entity(row) if row is not None else None
 
     def get_by_key(self, key: str) -> Feature | None:
@@ -49,7 +48,9 @@ class SqliteFeatureRepository(FeatureRepository):
 
     def update(self, feature: Feature) -> Feature:
         with self._session_factory() as session:
-            row = session.get(FeatureModel, str(feature.id))
+            if feature.id is None:
+                raise NotFoundError("Feature not found.")
+            row = session.get(FeatureModel, feature.id)
             if row is None:
                 raise NotFoundError("Feature not found.")
 
@@ -63,9 +64,9 @@ class SqliteFeatureRepository(FeatureRepository):
             session.commit()
         return feature
 
-    def delete(self, feature_id: UUID) -> bool:
+    def delete(self, feature_id: int) -> bool:
         with self._session_factory() as session:
-            row = session.get(FeatureModel, str(feature_id))
+            row = session.get(FeatureModel, feature_id)
             if row is None:
                 return False
             session.delete(row)
@@ -75,7 +76,7 @@ class SqliteFeatureRepository(FeatureRepository):
     @staticmethod
     def _to_entity(row: FeatureModel) -> Feature:
         return Feature(
-            id=UUID(row.id),
+            id=row.id,
             name=row.name,
             key=row.key,
             description=row.description,

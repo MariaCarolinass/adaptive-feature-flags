@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone, timedelta
-from uuid import uuid4
 
 import pytest
 
@@ -19,7 +18,7 @@ def _event(
 ) -> Event:
     ts = timestamp or datetime.now(timezone.utc)
     return Event(
-        id=uuid4(),
+        id=None,
         user_id=user_id,
         feature_key=feature_key,
         event_type=event_type,
@@ -33,6 +32,7 @@ def test_create_and_get_event(session_factory) -> None:
     event = _event()
     repo.create(event)
 
+    assert isinstance(event.id, int)
     loaded = repo.get_by_id(event.id)
 
     assert loaded is not None
