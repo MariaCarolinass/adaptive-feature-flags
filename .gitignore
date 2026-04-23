@@ -60,6 +60,7 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+db.sqbpro
 
 # Flask stuff:
 instance/
@@ -208,3 +209,6 @@ __marimo__/
 
 # VS Code
 .vscode/
+
+# Models
+storage/models/
