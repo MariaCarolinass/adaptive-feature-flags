@@ -22,7 +22,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expi
 
 
 def init_db() -> None:
-    from app.infrastructure.models import Base
+    from app.infrastructure.db.models import Base
 
     Base.metadata.create_all(bind=engine)
 

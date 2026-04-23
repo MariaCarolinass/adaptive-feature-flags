@@ -15,7 +15,7 @@ class FeatureModel(Base):
     __tablename__ = "features"
     __table_args__ = (UniqueConstraint("key", name="uq_features_key"),)
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -29,7 +29,7 @@ class FeatureModel(Base):
 class EventModel(Base):
     __tablename__ = "events"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     feature_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     event_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
@@ -46,4 +46,17 @@ class ModelMetadataModel(Base):
     model_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
     trained_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     metrics: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    artifact_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+class TrainingJobModel(Base):
+    __tablename__ = "training_jobs"
+
+    job_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
