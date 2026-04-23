@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.infrastructure.db import init_db
+from app.infrastructure.db.db import init_db
 
 
 @asynccontextmanager
@@ -20,7 +20,13 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="MVP de sistema de feature flags com suporte a avaliação por ML.",
+    description=(
+        "Feature flag API with SQLite persistence and ML-based decisions.\n\n"
+        "### Main flows\n"
+        "- CRUD for features and events\n"
+        "- Model training via `/train`\n"
+        "- Feature evaluation via deterministic rollout or model score (`/evaluate`)\n\n"
+    ),
     docs_url="/docs" if settings.enable_docs else None,
     redoc_url="/redoc" if settings.enable_docs else None,
     openapi_url="/openapi.json" if settings.enable_docs else None,
@@ -45,11 +51,11 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-@app.get("/", tags=["root"])
+@app.get("/", tags=["root"], summary="Root message", description="Simple endpoint that identifies the API.")
 def root():
     return {"message": settings.app_name}
 
-@app.get("/health", tags=["health"])
+@app.get("/health", tags=["health"], summary="Healthcheck", description="Checks if the API is responsive.")
 def healthcheck():
     return {"status": "ok"}
 
