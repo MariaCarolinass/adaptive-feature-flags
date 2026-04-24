@@ -1,4 +1,4 @@
-# Smart Feature Flags API
+# Smart Feature Flags
 
 Smart Feature Flags é uma API de **feature flags** construída com **Python** + **FastAPI**, preparada para evoluir decisões de liberação com suporte de **aprendizado de máquina (ML)**.
 
@@ -50,32 +50,21 @@ export TRUSTED_HOSTS='["localhost","127.0.0.1","testserver"]'
 export CORS_ALLOWED_ORIGINS='["http://localhost:3000"]'
 ```
 
-## Atualizações recentes da API
-
-- IDs de `features` e `events` usam **inteiro autoincrement** (não UUID).
-- `POST /train` treina o modelo com eventos persistidos e salva metadados em `model_metadata`, incluindo `artifact_path`.
-- `POST /evaluate` usa score real do artefato quando o modelo está `ready`; se houver falha no score, faz fallback para rollout determinístico.
-- Tipos de evento usados pelo pipeline de ML são configuráveis por ambiente:
-  - `POSITIVE_EVENT_TYPES`
-  - `VIEW_EVENT_TYPES`
-  - `INTERMEDIATE_POSITIVE_EVENT_TYPES`
-  - `TERMINAL_POSITIVE_EVENT_TYPES`
-
 ## Arquitetura
 
 O projeto segue uma **Arquitetura em Camadas** (Layered Architecture), inspirada em **DDD “lite”**:
 
 - **Domain (`app/domain/`)**
-  - **Entidades** (`entities/`): estruturas de dados do domínio (dataclasses).
-  - **Contratos** (`repositories/`): interfaces de repositório (o domínio depende de abstrações).
-  - **Services** (`services/`): regras de negócio e orquestração (sem FastAPI/SQLAlchemy).
+  - **Entidades** (`entities/`): estruturas de dados do domínio.
+  - **Contratos** (`repositories/`): interfaces de repositório.
+  - **Services** (`services/`): regras de negócio e orquestração.
 
 - **Infrastructure (`app/infrastructure/`)**
   - **Persistência** (`db/models.py`, `db/db.py`): modelos SQLAlchemy e sessão/engine.
   - **Repositórios concretos** (`repositories/`): implementação SQLite dos contratos do domínio.
 
 - **API (`app/api/` + `app/schemas/`)**
-  - **Rotas** FastAPI (HTTP) e **schemas** Pydantic (I/O).
+  - **Rotas** FastAPI (HTTP) e **schemas** Pydantic.
   - Rotas chamam services; services chamam repositórios via contratos.
 
 ### Fluxo do CRUD (padrão do projeto)
@@ -99,10 +88,6 @@ Documentacao dedicada do fluxo de decisao:
 - **Evaluation**: `POST /evaluate`
 - **Training**: `POST /train`, `POST /train/async`, `GET /train/jobs/{job_id}`, `GET /model/status`
 - **Simulation**: `POST /simulate` (importa CSV por URL ou upload de arquivo)
-
-Observação de contrato:
-
-- Parâmetros `{feature_id}` e `{event_id}` são inteiros.
 
 ## Importação de dataset (Retailrocket)
 
