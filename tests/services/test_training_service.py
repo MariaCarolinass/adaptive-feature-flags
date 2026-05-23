@@ -40,6 +40,7 @@ class _ModelRepo:
 def _event(event_type: str) -> Event:
     return Event(
         id=1,
+        source="test",
         user_id="u1",
         feature_key="f1",
         event_type=event_type,

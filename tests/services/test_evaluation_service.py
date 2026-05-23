@@ -59,6 +59,7 @@ def _feature(*, enabled: bool = True, ml_enabled: bool = True) -> Feature:
 def _event(user_id: str, event_type: str) -> Event:
     return Event(
         id=1,
+        source="test",
         user_id=user_id,
         feature_key="feature_a",
         event_type=event_type,
@@ -97,6 +98,7 @@ def test_evaluate_uses_ml_score_when_model_is_ready(monkeypatch) -> None:
             [
                 Event(
                     id=1,
+                    source="test",
                     user_id="u1",
                     feature_key="feature_a",
                     event_type="view",
@@ -105,6 +107,7 @@ def test_evaluate_uses_ml_score_when_model_is_ready(monkeypatch) -> None:
                 ),
                 Event(
                     id=2,
+                    source="test",
                     user_id="u1",
                     feature_key="feature_a",
                     event_type="transaction",

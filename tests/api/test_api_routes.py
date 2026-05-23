@@ -171,3 +171,103 @@ def test_simulate_dataset_import_accepts_csv_file(monkeypatch) -> None:
         assert payload["source_type"] == "file"
         assert payload["inserted_rows"] == 2
 
+
+def test_ingest_events_batch_returns_saved_count(monkeypatch) -> None:
+    from app.api.v1.routes import ingest as ingest_route
+
+    monkeypatch.setattr(
+        ingest_route.ingest_service,
+        "ingest_events",
+        lambda **_kwargs: {"saved_events": 2},
+    )
+
+    payload = {
+        "source": "web_app",
+        "events": [
+            {
+                "user_id": "u123",
+                "feature_key": "new_checkout",
+                "event_type": "clicked",
+                "timestamp": "2026-04-22T10:00:00Z",
+                "properties": {"device": "mobile"},
+            },
+            {
+                "user_id": "u124",
+                "feature_key": "new_checkout",
+                "event_type": "viewed_feature",
+                "timestamp": "2026-04-22T10:01:00Z",
+                "properties": {"device": "desktop"},
+            },
+        ],
+    }
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.post("/ingest/events", json=payload)
+        assert response.status_code == 201
+        assert response.json() == {"saved_events": 2, "rejected": 0}
+
+
+def test_ingest_events_batch_validates_payload() -> None:
+    payload = {"source": "web_app", "events": []}
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.post("/ingest/events", json=payload)
+        assert response.status_code == 422
+
+
+def test_ingest_events_batch_returns_typed_error(monkeypatch) -> None:
+    from app.api.v1.routes import ingest as ingest_route
+    from app.core.exceptions import ValidationError
+
+    def _raise(*_args, **_kwargs):
+        raise ValidationError("events must contain at least one item.")
+
+    monkeypatch.setattr(ingest_route.ingest_service, "ingest_events", _raise)
+
+    payload = {
+        "source": "web_app",
+        "events": [
+            {
+                "user_id": "u123",
+                "feature_key": "new_checkout",
+                "event_type": "clicked",
+                "timestamp": "2026-04-22T10:00:00Z",
+                "properties": {"device": "mobile"},
+            }
+        ],
+    }
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.post("/ingest/events", json=payload)
+        assert response.status_code == 400
+        body = response.json()
+        assert body["detail"]["code"] == "validation_error"
+
+
+def test_feature_recommendation_endpoint_returns_recommendation(monkeypatch) -> None:
+    from app.api.v1.routes import features as features_route
+
+    monkeypatch.setattr(
+        features_route.recommendation_service,
+        "get_recommendation",
+        lambda _feature_key: {
+            "feature_key": "new_checkout",
+            "current_rollout": 10,
+            "recommendation": "increase_rollout",
+            "suggested_rollout": 30,
+            "reason": "ML-selected users showed higher engagement than random rollout.",
+            "metrics": {
+                "ml_engagement": 0.2521,
+                "rollout_engagement": 0.0269,
+                "uplift": 0.2252,
+                "coverage": 0.1034,
+            },
+        },
+    )
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.get("/features/new_checkout/recommendation")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["recommendation"] == "increase_rollout"
+        assert payload["suggested_rollout"] == 30

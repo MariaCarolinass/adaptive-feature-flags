@@ -19,6 +19,7 @@ def _event(
     ts = timestamp or datetime.now(timezone.utc)
     return Event(
         id=None,
+        source="test",
         user_id=user_id,
         feature_key=feature_key,
         event_type=event_type,
@@ -91,4 +92,3 @@ def test_update_event_requires_existing_id(session_factory) -> None:
 
     with pytest.raises(NotFoundError, match="Event not found"):
         repo.update(event)
-
