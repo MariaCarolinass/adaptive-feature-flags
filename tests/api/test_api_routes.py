@@ -114,6 +114,4 @@ def test_ingest_events_batch_returns_typed_error(monkeypatch) -> None:
         assert response.status_code == 400
         body = response.json()
         assert body["detail"]["code"] == "validation_error"
-
-
-        assert payload["suggested_rollout"] == 30
+        assert body["detail"]["message"] == "events must contain at least one item."
