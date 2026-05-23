@@ -32,9 +32,9 @@ python3 scripts/seed_demo.py
 
 Efeito:
 
-- cria features demo (se nao existirem);
-- cria eventos sinteticos com `source=seed_demo`;
-- e idempotente (evita duplicacao equivalente).
+- cria features demo (se não existirem);
+- cria eventos sintéticos com `source=seed_demo`;
+- é idempotente (evita duplicação equivalente).
 
 ### `scripts/import_events_csv.py`
 
@@ -62,7 +62,7 @@ python3 scripts/import_events_csv.py \
 
 ### `scripts/build_user_features.py`
 
-Uso: gerar features por usuario a partir da tabela `events` e gravar em tabela SQL.
+Uso: gerar features por usuário a partir da tabela `events` e gravar em tabela SQL.
 
 Comando:
 
@@ -70,13 +70,13 @@ Comando:
 python3 scripts/build_user_features.py --output-table user_features
 ```
 
-Opcao util:
+Opção útil:
 
 - `--dry-run`: processa sem gravar na base.
 
 ### `scripts/test_model.py`
 
-Uso: comparar o modelo treinado com o baseline de rollout deterministico.
+Uso: comparar o modelo treinado com o baseline de rollout determinístico.
 
 Comando:
 
@@ -86,12 +86,12 @@ python3 scripts/test_model.py \
   --rollout-percentage 10
 ```
 
-Saida principal:
+Saída principal:
 
-- acuracia e taxa positiva de ML vs rollout;
-- metricas de negocio (`ML Engagement`, `Rollout Engagement`, `Uplift`).
+- acurácia e taxa positiva de ML vs rollout;
+- métricas de negócio (`ML Engagement`, `Rollout Engagement`, `Uplift`).
 
-## Variaveis de ambiente relevantes
+## Variáveis de ambiente relevantes
 
 - `DATABASE_URL`
 - `MODELS_DIR`

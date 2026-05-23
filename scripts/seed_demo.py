@@ -159,13 +159,13 @@ def main() -> None:
     created_features, existing_features = seed_features(feature_service, feature_repository)
     created_events, skipped_events = seed_events(event_service)
 
-    print("Seed demo concluido.")
+    print("Seed demo concluído.")
     print(f"Features criadas: {created_features}")
-    print(f"Features ja existentes: {existing_features}")
+    print(f"Features já existentes: {existing_features}")
     print(f"Eventos criados: {created_events}")
-    print(f"Eventos ignorados (idempotencia): {skipped_events}")
+    print(f"Eventos ignorados (idempotência): {skipped_events}")
     print("")
-    print("Proximo passo:")
+    print("Próximo passo:")
     print("curl -X POST http://localhost:8000/train")
 
 

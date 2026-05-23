@@ -1,8 +1,8 @@
-# Importacao CSV: Adapters
+# Importação CSV: Adapters
 
-Este guia explica a diferenca entre os adapters do script `scripts/import_events_csv.py`, com foco no modo `generic`.
+Este guia explica a diferença entre os adapters do script `scripts/import_events_csv.py`, com foco no modo `generic`.
 
-## Visao geral
+## Visão geral
 
 O script suporta dois adapters:
 
@@ -40,18 +40,18 @@ python3 scripts/import_events_csv.py \
 
 ## Adapter `generic`
 
-Use quando o CSV nao tem os mesmos nomes de coluna do formato acima.
+Use quando o CSV não tem os mesmos nomes de coluna do formato acima.
 
-### Requisitos obrigatorios
+### Requisitos obrigatórios
 
-No `--mapping-json`, voce precisa mapear estes campos canônicos:
+No `--mapping-json`, você precisa mapear estes campos canônicos:
 
 - `user_id`
 - `feature_key`
 - `event_type`
 - `timestamp`
 
-Cada valor do mapeamento e o nome da coluna no seu CSV.
+Cada valor do mapeamento é o nome da coluna no seu CSV.
 
 Exemplo de mapeamento:
 
@@ -76,12 +76,12 @@ python3 scripts/import_events_csv.py \
 
 ### Regras importantes do `generic`
 
-- `--source` e obrigatorio (valor salvo em `event.source`).
-- `--mapping-json` e obrigatorio.
-- Se uma coluna mapeada nao existir ou vier nula, a linha e ignorada.
-- `timestamp` e parseado por `pandas.to_datetime(..., utc=True)`.
+- `--source` é obrigatório (valor salvo em `event.source`).
+- `--mapping-json` é obrigatório.
+- Se uma coluna mapeada não existir ou vier nula, a linha é ignorada.
+- `timestamp` é parseado por `pandas.to_datetime(..., utc=True)`.
 
 ## Como escolher
 
-- Use `ecommerce_dataset` se seu CSV ja e desse formato.
+- Use `ecommerce_dataset` se seu CSV já é desse formato.
 - Use `generic` para qualquer layout customizado.

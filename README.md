@@ -23,7 +23,7 @@ Inicie a API:
 uvicorn app.main:app --reload
 ```
 
-Teste rapido de disponibilidade:
+Teste rápido de disponibilidade:
 
 ```bash
 curl http://localhost:8000/health
@@ -32,9 +32,9 @@ curl http://localhost:8000/features
 
 ## Como testar o projeto
 
-Depois de instalar e subir a API, voce pode escolher **1 de 2 caminhos** para popular dados:
+Depois de instalar e subir a API, você pode escolher **1 de 2 caminhos** para popular dados:
 
-### Opcao 1: Seed demo (mais rapido)
+### Opção 1: Seed demo (mais rápido)
 
 O script [`scripts/seed_demo.py`](scripts/seed_demo.py) inicializa a base local com dados de exemplo para facilitar testes manuais do fluxo completo.
 
@@ -42,11 +42,11 @@ O script [`scripts/seed_demo.py`](scripts/seed_demo.py) inicializa a base local 
 python3 scripts/seed_demo.py
 ```
 
-O script e idempotente: rodar mais de uma vez nao duplica registros equivalentes.
+O script é idempotente: rodar mais de uma vez não duplica registros equivalentes.
 
-### Opcao 2: Importacao CSV
+### Opção 2: Importação CSV
 
-O importador oficial e o [`scripts/import_events_csv.py`](scripts/import_events_csv.py). Ele importa eventos de CSV para o schema canonico de eventos da API.
+O importador oficial é o [`scripts/import_events_csv.py`](scripts/import_events_csv.py). Ele importa eventos de CSV para o schema canônico de eventos da API.
 
 Modos suportados:
 
@@ -69,7 +69,7 @@ Se seu CSV for customizado, use `--adapter generic` com `--mapping-json`.
 
 ## Avaliar modelo vs rollout
 
-O script [`scripts/test_model.py`](scripts/test_model.py) compara o desempenho do modelo treinado com o baseline de rollout deterministico.
+O script [`scripts/test_model.py`](scripts/test_model.py) compara o desempenho do modelo treinado com o baseline de rollout determinístico.
 
 Exemplo:
 
@@ -79,9 +79,9 @@ python3 scripts/test_model.py \
   --rollout-percentage 10
 ```
 
-## Autenticacao da API (JWT)
+## Autenticação da API (JWT)
 
-Para proteger a API, ative autenticacao no `.env`:
+Para proteger a API, ative autenticação no `.env`:
 
 ```env
 AUTH_ENABLED=true

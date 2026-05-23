@@ -32,15 +32,15 @@ flowchart TD
 
     J[POST /evaluate] --> K[EvaluationService.evaluate]
     K --> L{Feature existe e enabled?}
-    L -- nao --> M[Retorna disabled: feature_not_found/feature_disabled]
+    L -- não --> M[Retorna disabled: feature_not_found/feature_disabled]
     L -- sim --> N{ml_enabled e modelo ready?}
-    N -- nao --> O[Fallback rollout deterministico]
-    N -- sim --> P[Busca eventos do usuario]
-    P --> Q[FeatureBuilder para 1 usuario]
+    N -- não --> O[Fallback rollout determinístico]
+    N -- sim --> P[Busca eventos do usuário]
+    P --> Q[FeatureBuilder para 1 usuário]
     Q --> R[Carrega feature_columns do artifact]
     R --> S[ModelPredictor.predict_score]
     S --> T{Score valido?}
-    T -- nao --> O
+    T -- não --> O
     T -- sim --> U[enabled = score >= 0.1 source=ml]
     O --> V[enabled = bucket < rollout_percentage source=rollout]
 ```
