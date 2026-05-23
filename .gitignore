@@ -212,3 +212,7 @@ __marimo__/
 
 # Models
 storage/models/
+
+# Agents
+.agents/
+.codex/
