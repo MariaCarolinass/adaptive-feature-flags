@@ -2,7 +2,7 @@
 
 ## Papel no projeto
 
-O Smart Feature Flags API nasce com foco em decisões de rollout orientadas por eventos (Event-Driven). A experimentação é parte central da evolução do produto, mas com escopo intencionalmente incremental no MVP.
+O Adaptive Feature Flags nasce com foco em decisões de rollout orientadas por eventos (Event-Driven). A experimentação é parte central da evolução do produto, mas com escopo intencionalmente incremental no MVP.
 
 ## Relação entre Event-Driven e A/B testing
 

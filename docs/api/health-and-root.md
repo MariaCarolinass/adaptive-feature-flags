@@ -8,7 +8,7 @@ Exemplo de resposta:
 
 ```json
 {
-  "message": "Smart Feature Flags API"
+  "message": "Adaptive Feature Flags"
 }
 ```
 

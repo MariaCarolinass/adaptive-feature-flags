@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Sistemas digitais modernos precisam liberar funcionalidades de forma gradual para reduzir risco operacional e impacto negativo para usuários. O Smart Feature Flags nasce como iniciativa de P&D para estudar decisões de rollout orientadas por eventos de uso, indo além de estratégias fixas baseadas apenas em percentual.
+Sistemas digitais modernos precisam liberar funcionalidades de forma gradual para reduzir risco operacional e impacto negativo para usuários. O Adaptive Feature Flags nasce como iniciativa de P&D para estudar decisões de rollout orientadas por eventos de uso, indo além de estratégias fixas baseadas apenas em percentual.
 
 ## O que é este MVP
 

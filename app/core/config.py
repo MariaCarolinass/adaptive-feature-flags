@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Smart Feature Flags API"
+    app_name: str = "Adaptive Feature Flags"
     database_url: str = "sqlite:///./db.sqlite3"
     models_dir: str = "storage/models"
     environment: str = "development"

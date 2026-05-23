@@ -1,4 +1,4 @@
-# Documentação do Smart Feature Flags
+# Documentação do Adaptive Feature Flags
 
 Este diretório organiza a documentação em produto, arquitetura, API, decisões técnicas, implementação e operação.
 
