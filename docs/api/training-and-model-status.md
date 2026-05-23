@@ -30,31 +30,6 @@ Exemplo de resposta:
 }
 ```
 
-## `POST /train/async`
-
-Inicia treino assíncrono e retorna `job_id`.
-
-Response `202`:
-
-```json
-{
-  "job_id": "7f01a2a10b1b4f7b96f8f6f8c4d9a123",
-  "status": "queued",
-  "submitted_at": "2026-05-23T12:12:00Z"
-}
-```
-
-## `GET /train/jobs/{job_id}`
-
-Consulta status de job assíncrono.
-
-Status esperados:
-
-- `queued`
-- `running`
-- `succeeded`
-- `failed`
-
 ## `GET /model/status`
 
 Retorna estado atual do último modelo treinado.
@@ -78,12 +53,6 @@ Exemplo:
 
 ```mermaid
 flowchart LR
-    A[POST /train/async] --> B[job_id]
-    B --> C[GET /train/jobs/{job_id}]
-    C --> D{status}
-    D --> E[queued]
-    D --> F[running]
-    D --> G[succeeded ou failed]
-    H[POST /train] --> I[treino síncrono]
-    I --> J[GET /model/status]
+    A[POST /train] --> B[treino síncrono]
+    B --> C[GET /model/status]
 ```

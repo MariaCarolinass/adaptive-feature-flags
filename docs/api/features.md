@@ -52,25 +52,3 @@ Request usa o mesmo schema de criação (`FeatureCreate`).
 Remove feature.
 
 Response: `204 No Content`.
-
-## `GET /features/{feature_key}/recommendation`
-
-Retorna recomendação estratégica de rollout para a feature.
-
-Exemplo de resposta:
-
-```json
-{
-  "feature_key": "new_checkout",
-  "current_rollout": 10,
-  "recommendation": "increase_rollout",
-  "suggested_rollout": 30,
-  "reason": "Machine learning-selected users showed higher engagement than random rollout.",
-  "metrics": {
-    "ml_engagement": 0.34,
-    "rollout_engagement": 0.22,
-    "uplift": 0.12,
-    "coverage": 0.18
-  }
-}
-```

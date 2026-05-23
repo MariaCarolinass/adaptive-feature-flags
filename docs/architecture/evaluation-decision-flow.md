@@ -70,23 +70,6 @@ Isso garante consistência: mesmo par `(user_id, feature_key)` mantém a mesma d
 - Fonte: eventos persistidos.
 - Saída: artefato em `MODELS_DIR` + metadados com status `ready`.
 
-### Assíncrono
-
-- Iniciar: `POST /train/async`.
-- Consultar: `GET /train/jobs/{job_id}`.
-- Status global: `GET /model/status`.
-- Persistência: tabela `training_jobs` com retenção e pruning.
-
-```mermaid
-stateDiagram-v2
-    [*] --> queued
-    queued --> running
-    running --> succeeded
-    running --> failed
-    succeeded --> [*]
-    failed --> [*]
-```
-
 ## Condições típicas de fallback para rollout
 
 - Sem eventos do usuário.

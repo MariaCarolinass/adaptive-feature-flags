@@ -17,7 +17,6 @@ Pontos de cuidado:
 ## 2) Treino de modelo
 
 - Orquestração: `app/domain/services/training_service.py`
-- Job async: `app/domain/services/training_job_service.py`
 - Treinamento: `app/infrastructure/ml/trainer.py`
 - Features de machine learning: `app/infrastructure/ml/feature_builder.py`
 - Persistência do artefato: `app/infrastructure/ml/serializer.py`
@@ -48,13 +47,3 @@ Pontos de cuidado:
 
 - Não permitir estados inconsistentes (`enabled`, `ml_enabled`, `rollout_percentage`).
 - Manter contrato de repositório alinhado com testes.
-
-## 5) Recomendação de rollout da feature
-
-- Rota: `app/api/v1/routes/features.py` (`/features/{feature_key}/recommendation`)
-- Service: `app/domain/services/recommendation_service.py`
-
-Pontos de cuidado:
-
-- Separar claramente recomendação estratégica de decisão online.
-- Não aplicar alteração automática de rollout sem camada explícita de aprovação.

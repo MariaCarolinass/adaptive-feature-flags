@@ -9,6 +9,8 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 - Contratos da API: `api/README.md`
 - Decisões técnicas (ADRs): `decisions/README.md`
 - Implementações críticas de código: `implementation/critical-code-paths.md`
+- Fluxo detalhado de ML e decisão online: `implementation/ml-decision-flow-in-depth.md`
+- Guia de módulos de suporte (core/integrations/observability/sdk): `implementation/module-guide-core-and-support.md`
 - Operação local e rotina de desenvolvimento: `operations/development-playbook.md`
 - Roadmap incremental: `roadmap.md`
 

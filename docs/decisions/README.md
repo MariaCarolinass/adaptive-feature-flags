@@ -15,6 +15,5 @@ Esta pasta registra decisões técnicas relevantes, contexto e tradeoffs.
 - `0002-safe-fallback-rollout.md`
 - `0003-sqlite-as-default-store.md`
 - `0004-ml-threshold-0-1.md`
-- `0005-async-training-single-worker.md`
 - `0006-canonical-ingestion-contract.md`
 - `0007-mvp-scope-rollout-ml-before-full-ab-platform.md`

@@ -27,20 +27,6 @@ Lista eventos com filtros opcionais:
 - `feature_key`
 - `event_type`
 
-## `GET /events/{event_id}`
-
-Busca evento por ID.
-
-## `PUT /events/{event_id}`
-
-Atualiza evento existente.
-
-## `DELETE /events/{event_id}`
-
-Remove evento.
-
-Response: `204 No Content`.
-
 ## `POST /ingest/events`
 
 Ingestão canônica em lote para integração com sistemas externos.

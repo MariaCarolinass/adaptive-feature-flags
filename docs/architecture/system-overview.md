@@ -16,12 +16,12 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 - Serviços de domínio (`app/domain/services`).
 - Repositórios SQLite (`app/infrastructure/repositories`).
 - Pipeline de machine learning (`app/infrastructure/ml`).
-- Ingestão e simulação de dados (`app/api/v1/routes/ingest.py`, `app/api/v1/routes/simulation.py`).
+- Ingestão de dados (`app/api/v1/routes/ingest.py`).
 
 ## Fluxo de alto nível
 
 1. Eventos chegam por `POST /events` ou `POST /ingest/events`.
-2. Dados são persistidos e usados para treino via `POST /train` ou `POST /train/async`.
+2. Dados são persistidos e usados para treino via `POST /train`.
 3. `POST /evaluate` decide `enabled=true/false` por usuário.
 4. Se machine learning não estiver pronto/válido, aplica rollout determinístico.
 
@@ -29,7 +29,7 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 flowchart LR
     A[App Externa] --> B[POST /events ou /ingest/events]
     B --> C[(SQLite Events)]
-    C --> D[POST /train ou /train/async]
+    C --> D[POST /train]
     D --> E[(Artefato de modelo)]
     A --> F[POST /evaluate]
     E --> F
