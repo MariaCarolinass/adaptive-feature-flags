@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     trusted_hosts: list[str] = ["localhost", "127.0.0.1", "testserver"]
     cors_allowed_origins: list[str] = ["http://localhost", "http://127.0.0.1", "http://localhost:3000"]
     enable_docs: bool = True
+    auth_enabled: bool = False
+    auth_jwt_secret: str = ""
+    auth_issuer_key: str = ""
+    auth_token_expire_minutes: int = 60
+    auth_exempt_paths: list[str] = ["/", "/health", "/docs", "/redoc", "/openapi.json", "/auth/token"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

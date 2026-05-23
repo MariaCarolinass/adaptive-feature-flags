@@ -1,12 +1,10 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from app.api.v1.router import api_router
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.http import attach_openapi_auth, register_http_stack
 from app.core.logging import setup_logging
 from app.infrastructure.db.db import init_db
 
@@ -27,9 +25,9 @@ app = FastAPI(
         "### Main Flows\n"
         "- Feature lifecycle: create, list, update, and delete via `/features`\n"
         "- Event ingestion: single events via `/events` and batch ingestion via `/ingest/events`\n"
-        "- Model training: synchronous `/train` and asynchronous `/train/async`\n"
+        "- Model training: synchronous `/train`\n"
         "- Online decision: user-level evaluation via `/evaluate`\n"
-        "- Strategic recommendation: rollout guidance via `/features/{feature_key}/recommendation`\n\n"
+        "- Model observability: current status via `/model/status`\n\n"
         "### Design Principles\n"
         "- Predictable behavior with deterministic rollout\n"
         "- Progressive intelligence with machine learning when ready\n"
@@ -42,19 +40,8 @@ app = FastAPI(
 )
 
 setup_logging()
-
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.trusted_hosts,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
-)
+register_http_stack(app, settings)
+attach_openapi_auth(app)
 
 app.include_router(api_router)
 
@@ -66,19 +53,3 @@ def root():
 @app.get("/health", tags=["health"], summary="Healthcheck", description="Checks if the API is responsive.")
 def healthcheck():
     return {"status": "ok"}
-
-
-@app.middleware("http")
-async def security_headers_middleware(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    response.headers["X-XSS-Protection"] = "0"
-    return response
-
-
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
