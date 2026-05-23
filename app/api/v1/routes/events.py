@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.core.exceptions import AppError, NotFoundError, to_http_exception
+from app.core.exceptions import AppError, to_http_exception
 from app.core.logging import get_logger
 from app.dependencies import event_service
 from app.schemas.event import EventCreate, EventResponse
@@ -31,67 +31,6 @@ def create(event: EventCreate):
         raise to_http_exception(e)
     except Exception as e:
         logger.exception("Failed to create event")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
-
-
-@router.get(
-    "/{event_id}",
-    response_model=EventResponse,
-    summary="Get event by ID",
-    description="Returns a specific event by ID.",
-    response_description="Event found.",
-)
-def retrieve(event_id: int):
-    try:
-        event = event_service.get_event_by_id(event_id)
-        if event is None:
-            raise NotFoundError("Event not found.")
-        return event
-    except AppError as e:
-        raise to_http_exception(e)
-    except Exception as e:
-        logger.exception("Failed to retrieve event")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
-
-
-@router.put(
-    "/{event_id}",
-    response_model=EventResponse,
-    summary="Update event",
-    description="Updates an existing event.",
-    response_description="Event updated.",
-)
-def update(event_id: int, event: EventCreate):
-    try:
-        return event_service.update_event(
-            event_id=event_id,
-            user_id=event.user_id,
-            feature_key=event.feature_key,
-            event_type=event.event_type,
-            timestamp=event.timestamp,
-            properties=event.properties,
-            source=event.source,
-        )
-    except AppError as e:
-        raise to_http_exception(e)
-    except Exception as e:
-        logger.exception("Failed to update event")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
-
-
-@router.delete(
-    "/{event_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete event",
-    description="Deletes an existing event.",
-)
-def delete(event_id: int):
-    try:
-        event_service.delete_event(event_id)
-    except AppError as e:
-        raise to_http_exception(e)
-    except Exception as e:
-        logger.exception("Failed to delete event")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
 
 

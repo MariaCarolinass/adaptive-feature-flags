@@ -50,19 +50,3 @@ class FeatureResponse(BaseModel):
             }
         }
     )
-
-
-class RecommendationMetrics(BaseModel):
-    ml_engagement: float
-    rollout_engagement: float
-    uplift: float
-    coverage: float
-
-
-class FeatureRecommendationResponse(BaseModel):
-    feature_key: str
-    current_rollout: int = Field(ge=0, le=100)
-    recommendation: str
-    suggested_rollout: int = Field(ge=0, le=100)
-    reason: str
-    metrics: RecommendationMetrics
