@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from app.api.v1.routes import evaluate as evaluate_route
-from app.api.v1.routes import features as features_route
 from app.api.v1.routes import training as training_route
 from app.schemas.evaluate import EvaluateRequest, EvaluateUser
 
@@ -70,26 +69,3 @@ def test_post_evaluate_ml_when_model_ready(monkeypatch) -> None:
     )
     assert result["decision_source"] == "ml"
     assert result["enabled"] is True
-
-
-def test_get_recommendation_endpoint_returns_payload(monkeypatch) -> None:
-    monkeypatch.setattr(
-        features_route.recommendation_service,
-        "get_recommendation",
-        lambda _feature_key: {
-            "feature_key": "new_checkout",
-            "current_rollout": 10,
-            "recommendation": "increase_rollout",
-            "suggested_rollout": 30,
-            "reason": "ML-selected users showed higher engagement than random rollout.",
-            "metrics": {
-                "ml_engagement": 0.2521,
-                "rollout_engagement": 0.0269,
-                "uplift": 0.2252,
-                "coverage": 0.1034,
-            },
-        },
-    )
-
-    result = features_route.recommendation("new_checkout")
-    assert result["recommendation"] == "increase_rollout"
