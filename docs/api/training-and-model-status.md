@@ -78,12 +78,14 @@ Exemplo:
 
 ```mermaid
 flowchart LR
-    A[POST /train/async] --> B[job_id]
-    B --> C[GET /train/jobs/{job_id}]
+    A["POST /train/async"] --> B["job_id"]
+    B --> C["GET /train/jobs/{job_id}"]
     C --> D{status}
-    D --> E[queued]
-    D --> F[running]
-    D --> G[succeeded ou failed]
-    H[POST /train] --> I[treino síncrono]
-    I --> J[GET /model/status]
+
+    D --> E["queued"]
+    D --> F["running"]
+    D --> G["succeeded ou failed"]
+
+    H["POST /train"] --> I["treino síncrono"]
+    I --> J["GET /model/status"]
 ```
