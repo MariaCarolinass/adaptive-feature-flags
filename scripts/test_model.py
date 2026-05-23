@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.core.config import settings
 from app.infrastructure.ml.serializer import ModelSerializer
-from scripts.build_features import build_features_from_chunks, load_event_chunks
+from scripts.build_user_features import build_features_from_chunks, load_event_chunks
 from sklearn.model_selection import train_test_split
 
 

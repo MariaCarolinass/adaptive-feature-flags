@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from scripts.build_features import build_features_from_chunks
+from scripts.build_user_features import build_features_from_chunks
 
 
 def test_build_features_from_chunks_aggregates_across_chunks() -> None:
