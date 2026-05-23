@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sdk.smartflags import SmartFlagsClient
+from sdk.adaptiveflags import AdaptiveFlagsClient
 
 
 def render_checkout(user_id: str, *, enabled: bool) -> None:
@@ -11,7 +11,7 @@ def render_checkout(user_id: str, *, enabled: bool) -> None:
 
 
 def handle_user_request(user_id: str) -> None:
-    client = SmartFlagsClient(base_url="http://localhost:8000")
+    client = AdaptiveFlagsClient(base_url="http://localhost:8000")
 
     decision = client.evaluate("new_checkout", user_id)
     enabled = bool(decision.get("enabled", False))

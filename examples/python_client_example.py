@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from sdk.smartflags import SmartFlagsClient
+from sdk.adaptiveflags import AdaptiveFlagsClient
 
 
 def main() -> None:
-    client = SmartFlagsClient(base_url="http://localhost:8000")
+    client = AdaptiveFlagsClient(base_url="http://localhost:8000")
 
     print("1) Tracking user event...")
     tracked = client.track(
