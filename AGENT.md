@@ -1,61 +1,59 @@
-# Smart Feature Flags API — Project Rules
+# Smart Feature Flags API — Engineering Rules
 
-## Architecture (must follow)
+Este arquivo define as regras obrigatórias para mudanças no projeto.
 
-* **Layered + DDD lite**: `domain` -> `infrastructure` -> `api`.
-* `domain` must **not** import FastAPI/SQLAlchemy.
-* Business rules belong in `services`; data access via contracts in `domain/repositories`.
+## 1) Arquitetura (obrigatório)
 
-## Code organization
+- Padrão: `domain -> infrastructure -> api` (Layered + DDD lite).
+- `domain` não pode importar FastAPI, SQLAlchemy ou detalhes de framework.
+- Regras de negócio ficam em `app/domain/services`.
+- Acesso a dados deve passar por contratos em `app/domain/repositories`.
 
-* `app/domain/`: entities, contracts, services.
-* `app/infrastructure/`: `db/models.py`, `db/db.py`, SQLite repositories.
-* `app/api/` + `app/schemas/`: HTTP routes + request/response schemas.
-* `app/core/`: config, logging, exceptions.
+## 2) Organização de código
 
-## Flow for any CRUD
+- `app/domain/`: entidades, contratos e serviços.
+- `app/infrastructure/`: banco, repositórios concretos, machine learning, observabilidade e integrações.
+- `app/api/` + `app/schemas/`: rotas HTTP e contratos de entrada/saída.
+- `app/core/`: configuração, logging e exceções.
 
-1. Define/adjust contract in `app/domain/repositories/*`.
-2. Apply validation and business rules in `app/domain/services/*`.
-3. Implement persistence in `app/infrastructure/repositories/*`.
-4. Expose via route in `app/api/v1/routes/*` with schema in `app/schemas/*`.
+## 3) Fluxo padrão para CRUD
 
-## API rules
+1. Definir/ajustar contrato em `app/domain/repositories/*`.
+2. Aplicar validações e regras em `app/domain/services/*`.
+3. Implementar persistência em `app/infrastructure/repositories/*`.
+4. Expor rota em `app/api/v1/routes/*` com schema em `app/schemas/*`.
 
-* Do not create endpoints without real support in service/repository.
-* Use typed exceptions from `app/core/exceptions.py`.
-* Map domain errors to HTTP via `to_http_exception()`.
-* Standard status codes:
+Não criar rota sem suporte real em service/repositório.
 
-  * `404`: not found
-  * `409`: conflict
-  * `204`: delete with no body
-  * `500`: unexpected error without leaking internal details
+## 4) Regras de API
 
-## Database and initialization
+- Usar exceções tipadas de `app/core/exceptions.py`.
+- Mapear erro de domínio para HTTP via `to_http_exception()`.
+- Não vazar detalhes internos em respostas `500`.
+- Códigos esperados:
+  - `404`: recurso não encontrado
+  - `409`: conflito de estado
+  - `204`: remoção sem corpo
+  - `500`: erro inesperado sanitizado
 
-* Single persistence layer: **SQLAlchemy + SQLite**.
-* Default URL: `sqlite:///./db.sqlite3` (via `DATABASE_URL`).
-* `init_db()` runs on **lifespan startup** in `app/main.py`.
-* Entity IDs use integer autoincrement; dictionary fields stored as `JSON`.
+## 5) Banco e inicialização
 
-## Security and runtime
+- Persistência padrão: SQLAlchemy + SQLite.
+- URL padrão: `sqlite:///./db.sqlite3` (via `DATABASE_URL`).
+- `init_db()` deve executar no startup (`lifespan`) em `app/main.py`.
+- IDs de entidade: inteiro autoincremental.
+- Campos flexíveis (dicionário): `JSON`.
 
-* Respect `.env` configuration (`Settings`):
+## 6) Segurança e runtime
 
-  * `ENVIRONMENT`, `LOG_LEVEL`, `ENABLE_DOCS`
-  * `TRUSTED_HOSTS`, `CORS_ALLOWED_ORIGINS`
-* Keep security middlewares and generic internal error responses.
-* Logging via `app/core/logging.py` (do not reconfigure root logger unnecessarily).
+- Respeitar `Settings` em `.env`/`app/core/config.py`.
+- Variáveis críticas:
+  - `ENVIRONMENT`, `LOG_LEVEL`, `ENABLE_DOCS`
+  - `TRUSTED_HOSTS`, `CORS_ALLOWED_ORIGINS`
+- Manter middlewares de segurança ativos.
+- Logging centralizado em `app/core/logging.py`.
 
-## Tests (mandatory when changing code)
-
-* Structure:
-
-  * `tests/services/`
-  * `tests/infrastructure/repositories/`
-  * `tests/api/`
-* Run:
+## 7) Testes obrigatórios ao alterar código
 
 ```bash
 source .venv/bin/activate
@@ -63,9 +61,21 @@ pytest
 python3 -m compileall -q app tests
 ```
 
-## PR checklist
+Cobrir ao menos a camada impactada (`tests/services`, `tests/infrastructure/repositories`, `tests/api`).
 
-* Layers are consistent and properly decoupled.
-* Routes, services, and repositories aligned.
-* No “ghost” endpoints.
-* README and `.env.example` updated if setup/config changes.
+## 8) Regras de documentação
+
+Sempre que houver mudança funcional:
+
+- Atualizar `README.md` se afetar uso/setup.
+- Atualizar `.env.example` se configuração mudar.
+- Atualizar `docs/` quando endpoint, fluxo de negócio ou decisão técnica mudar.
+- Registrar decisão relevante em `docs/decisions/` (ADR).
+
+## 9) Checklist de PR
+
+- Camadas consistentes e desacopladas.
+- Rota, service e repositório alinhados.
+- Sem endpoint “fantasma”.
+- Testes e `compileall` passando.
+- Documentação sincronizada com a mudança.

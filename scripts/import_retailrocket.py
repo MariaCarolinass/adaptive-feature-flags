@@ -1,87 +1,60 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 import sys
-from datetime import datetime, timezone
+
+import pandas as pd
+from sqlalchemy import text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import sessionmaker
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-import pandas as pd
-from sqlalchemy import create_engine
-from sqlalchemy import text
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
-
-from app.core.config import Settings
+from app.infrastructure.db.db import SessionLocal, init_db
 from app.infrastructure.db.models import Base, EventModel
+from app.infrastructure.integrations.retailrocket_adapter import RetailrocketCSVAdapter
 
-settings = Settings()
 REQUIRED_COLUMNS = {"timestamp", "visitorid", "event", "itemid"}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Import Retailrocket events.csv into the SmartFeatureFlagsAPI events table."
+        description="Import Retailrocket events.csv into canonical events schema."
     )
-    parser.add_argument(
-        "--csv",
-        required=True,
-        help="Path to Retailrocket events.csv file.",
-    )
-    parser.add_argument(
-        "--database-url",
-        default=settings.database_url,
-        help="SQLAlchemy database URL. Default: " + settings.database_url,
-    )
+    parser.add_argument("--csv", required=True, help="Path to Retailrocket events.csv file.")
     parser.add_argument(
         "--feature-key-mode",
         choices=["single", "item"],
         default="item",
-        help=(
-            "How to map feature_key. "
-            "'item' -> feature_key becomes item_<itemid>. "
-            "'single' -> feature_key becomes 'retailrocket_import'."
-        ),
+        help="'item' -> feature_key=item_<itemid>, 'single' -> feature_key=retailrocket_import.",
     )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Optional row limit for quick local tests.",
-    )
-    parser.add_argument(
-        "--chunk-size",
-        type=int,
-        default=200000,
-        help="Number of CSV rows processed per chunk.",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=10000,
-        help="Number of ORM rows inserted per transaction batch.",
-    )
-    parser.add_argument(
-        "--sync-features",
-        action="store_true",
-        help="When enabled, auto-create missing rows in features table from imported feature_key values.",
-    )
-    parser.add_argument(
-        "--feature-rollout-percentage",
-        type=int,
-        default=10,
-        help="Default rollout percentage for auto-created features (0-100).",
-    )
-    parser.add_argument(
-        "--feature-ml-enabled",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether auto-created features should have ml_enabled=true.",
-    )
+    parser.add_argument("--limit", type=int, default=None, help="Optional max number of events to import.")
+    parser.add_argument("--chunk-size", type=int, default=200000, help="CSV rows processed per chunk.")
+    parser.add_argument("--batch-size", type=int, default=10000, help="DB rows inserted per transaction.")
     return parser.parse_args()
+
+
+def _insert_batch(session_factory: sessionmaker, batch: list[dict]) -> int:
+    if not batch:
+        return 0
+    with session_factory() as session:
+        rows = [
+            EventModel(
+                user_id=str(event["user_id"]),
+                feature_key=str(event["feature_key"]),
+                event_type=str(event["event_type"]),
+                timestamp=event["timestamp"],
+                properties=event["properties"],
+            )
+            for event in batch
+        ]
+        session.add_all(rows)
+        session.commit()
+    return len(batch)
 
 
 def _validate_columns(df: pd.DataFrame) -> None:
@@ -109,38 +82,47 @@ def load_csv_chunks(csv_path: str, chunk_size: int, limit: int | None = None):
 
 
 def normalize_events(df: pd.DataFrame, feature_key_mode: str) -> pd.DataFrame:
-    work_df = df.copy()
-
-    work_df["timestamp"] = pd.to_datetime(work_df["timestamp"], unit="ms", utc=True, errors="coerce")
-    work_df = work_df.dropna(subset=["timestamp", "visitorid", "event", "itemid"])
-
-    work_df["user_id"] = work_df["visitorid"].astype(str)
-    work_df["event_type"] = work_df["event"].astype(str)
-
-    if feature_key_mode == "item":
-        work_df["feature_key"] = work_df["itemid"].apply(lambda value: f"item_{value}")
-    else:
-        work_df["feature_key"] = "retailrocket_import"
-
-    work_df["properties"] = work_df.apply(
-        lambda row: {
-            "source": "retailrocket",
-            "raw_itemid": str(row["itemid"]),
-            "raw_event": str(row["event"]),
-            "transactionid": (
-                None
-                if "transactionid" not in row or pd.isna(row.get("transactionid"))
-                else str(int(row["transactionid"]))
-            ),
-        },
-        axis=1,
-    )
-
-    return work_df[["user_id", "feature_key", "event_type", "timestamp", "properties"]].copy()
+    adapter = RetailrocketCSVAdapter(feature_key_mode=feature_key_mode)
+    events = []
+    for _, row in df.iterrows():
+        mapped = adapter._map_row(row)  # reuse adapter mapping to canonical schema
+        if mapped is None:
+            continue
+        events.append(
+            {
+                "user_id": str(mapped["user_id"]),
+                "feature_key": str(mapped["feature_key"]),
+                "event_type": str(mapped["event_type"]),
+                "timestamp": mapped["timestamp"],
+                "properties": mapped["properties"],
+            }
+        )
+    return pd.DataFrame(events, columns=["user_id", "feature_key", "event_type", "timestamp", "properties"])
 
 
 def ensure_events_table(engine: Engine) -> None:
     Base.metadata.create_all(bind=engine)
+
+
+def insert_events(engine: Engine, df: pd.DataFrame, batch_size: int = 10000) -> int:
+    local_session = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
+    inserted = 0
+    batch: list[dict] = []
+    for _, row in df.iterrows():
+        batch.append(
+            {
+                "user_id": row["user_id"],
+                "feature_key": row["feature_key"],
+                "event_type": row["event_type"],
+                "timestamp": row["timestamp"],
+                "properties": row["properties"],
+            }
+        )
+        if len(batch) >= batch_size:
+            inserted += _insert_batch(local_session, batch)
+            batch = []
+    inserted += _insert_batch(local_session, batch)
+    return inserted
 
 
 def sync_features(
@@ -184,76 +166,47 @@ def sync_features(
     return int(after - before)
 
 
-def insert_events(engine: Engine, df: pd.DataFrame, batch_size: int = 10000) -> int:
-    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
-    inserted = 0
-    with SessionLocal() as session:
-        for offset in range(0, len(df), batch_size):
-            frame = df.iloc[offset : offset + batch_size]
-            batch = [
-                EventModel(
-                    user_id=row["user_id"],
-                    feature_key=row["feature_key"],
-                    event_type=row["event_type"],
-                    timestamp=row["timestamp"],
-                    properties=row["properties"],
-                )
-                for _, row in frame.iterrows()
-            ]
-            session.add_all(batch)
-            session.commit()
-            inserted += len(batch)
-    return inserted
-
-
 def main() -> None:
     args = parse_args()
-    if not (0 <= args.feature_rollout_percentage <= 100):
-        raise ValueError("--feature-rollout-percentage must be between 0 and 100.")
+    if args.limit is not None and args.limit <= 0:
+        raise ValueError("--limit must be greater than zero.")
+    if args.chunk_size <= 0:
+        raise ValueError("--chunk-size must be greater than zero.")
+    if args.batch_size <= 0:
+        raise ValueError("--batch-size must be greater than zero.")
 
-    print("Connecting to database...")
-    engine = create_engine(args.database_url)
+    init_db()
+    adapter = RetailrocketCSVAdapter(feature_key_mode=args.feature_key_mode)
 
-    print("Ensuring events table exists...")
-    ensure_events_table(engine)
+    saved = 0
+    processed = 0
+    batch: list[dict] = []
 
-    total_raw_rows = 0
-    total_normalized_rows = 0
-    total_inserted_rows = 0
-    imported_feature_keys: set[str] = set()
-
-    print("Loading, normalizing and inserting in chunks...")
-    for index, raw_chunk in enumerate(
-        load_csv_chunks(args.csv, chunk_size=args.chunk_size, limit=args.limit),
-        start=1,
+    for event in adapter.iter_events(
+        args.csv,
+        chunk_size=args.chunk_size,
+        limit=args.limit,
     ):
-        total_raw_rows += len(raw_chunk)
-        normalized_chunk = normalize_events(raw_chunk, feature_key_mode=args.feature_key_mode)
-        total_normalized_rows += len(normalized_chunk)
-        imported_feature_keys.update(normalized_chunk["feature_key"].astype(str).unique().tolist())
-        inserted = insert_events(engine, normalized_chunk, batch_size=args.batch_size)
-        total_inserted_rows += inserted
-        print(
-            f"Chunk {index}: raw={len(raw_chunk)} normalized={len(normalized_chunk)} inserted={inserted}"
-        )
+        processed += 1
+        raw_item = event["properties"].get("raw_itemid")
+        if raw_item is not None:
+            event["properties"]["context_itemid"] = raw_item
 
-    synced_features = 0
-    if args.sync_features:
-        print("Syncing feature registry from imported feature keys...")
-        synced_features = sync_features(
-            engine,
-            imported_feature_keys,
-            rollout_percentage=args.feature_rollout_percentage,
-            ml_enabled=args.feature_ml_enabled,
-        )
+        batch.append(event)
+        if len(batch) >= args.batch_size:
+            saved += _insert_batch(SessionLocal, batch)
+            batch = []
 
-    print("Done.")
-    print(f"Raw rows processed: {total_raw_rows}")
-    print(f"Normalized rows: {total_normalized_rows}")
-    print(f"Inserted rows: {total_inserted_rows}")
-    if args.sync_features:
-        print(f"Features auto-created: {synced_features}")
-    print(f"Database URL: {args.database_url}")
+    saved += _insert_batch(SessionLocal, batch)
+
+    print("Retailrocket import completed.")
+    print("Source: retailrocket")
+    print(f"CSV file: {args.csv}")
+    print(f"Feature key mode: {args.feature_key_mode}")
+    print(f"Events processed: {processed}")
+    print(f"Events saved: {saved}")
+    print(f"Limit: {args.limit if args.limit is not None else 'none'}")
+    print(f"Batch size: {args.batch_size}")
 
 
 if __name__ == "__main__":
