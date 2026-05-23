@@ -9,8 +9,8 @@ Requisitos:
 - Python 3.12+
 
 ```bash
-git clone <repo-url>
-cd adaptive-feature-flags-api
+git clone https://github.com/MariaCarolinass/adaptive-feature-flags.git
+cd adaptive-feature-flags
 python3 -m venv .venv
 source .venv/bin/activate
 cp .env.example .env
