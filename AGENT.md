@@ -1,4 +1,4 @@
-# Smart Feature Flags API — Engineering Rules
+# Adaptive Feature Flags — Engineering Rules
 
 Este arquivo define as regras obrigatórias para mudanças no projeto.
 

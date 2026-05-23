@@ -1,6 +1,6 @@
-# Smart Feature Flags API
+# Adaptive Feature Flags
 
-Smart Feature Flags API é uma API de feature flags com rollout determinístico e suporte opcional a machine learning para decisão por usuário, construída com uma base Event-Driven em que eventos de uso alimentam o ciclo de decisão e aprendizado, mantendo fallback seguro no MVP e preparando evolução incremental para capacidades mais robustas de experimentação e teste A/B.
+Adaptive Feature Flags é uma API de feature flags com rollout determinístico e suporte opcional a machine learning para decisão por usuário, construída com uma base Event-Driven em que eventos de uso alimentam o ciclo de decisão e aprendizado, mantendo fallback seguro no MVP e preparando evolução incremental para capacidades mais robustas de experimentação e teste A/B.
 
 ## Quickstart
 
@@ -10,7 +10,7 @@ Requisitos:
 
 ```bash
 git clone <repo-url>
-cd smart-feature-flags-api
+cd adaptive-feature-flags-api
 python3 -m venv .venv
 source .venv/bin/activate
 cp .env.example .env

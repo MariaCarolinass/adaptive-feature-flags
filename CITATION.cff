@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "Se você usar este software, por favor cite-o."
-title: "Smart Feature Flags API"
+title: "Adaptive Feature Flags"
 type: software
 repository-code: "https://github.com/MariaCarolinass/adaptiveflags"
 license: "BSD-3-Clause"

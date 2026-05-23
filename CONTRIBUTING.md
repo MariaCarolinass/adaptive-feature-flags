@@ -1,4 +1,4 @@
-# Contribuindo para o Smart Feature Flags API
+# Contribuindo para o Adaptive Feature Flags
 
 Obrigado por contribuir.
 
