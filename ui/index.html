@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adaptive Flags - Protótipo Simples</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Simulador de Liberação de Feature</h1>
+      <p>Protótipo simples para simular criação da feature, decisão por usuário, tracking de eventos e resultado da liberação.</p>
+    </section>
+
+    <section class="card">
+      <h2>1) Configuração da API</h2>
+      <div class="grid">
+        <div>
+          <label for="baseUrl">Base URL</label>
+          <input id="baseUrl" value="http://localhost:8000" />
+        </div>
+        <div>
+          <label for="token">Bearer Token (opcional)</label>
+          <input id="token" placeholder="eyJ..." />
+        </div>
+      </div>
+      <div style="margin-top:10px" class="status" id="apiStatus">Aguardando ações.</div>
+    </section>
+
+    <section class="card">
+      <h2>2) Definição da Feature</h2>
+      <div class="grid">
+        <div>
+          <label for="featureKey">Feature Key</label>
+          <input id="featureKey" value="new_checkout" />
+        </div>
+        <div>
+          <label for="featureName">Feature Name</label>
+          <input id="featureName" value="New Checkout" />
+        </div>
+        <div>
+          <label for="rollout">Rollout %</label>
+          <input id="rollout" type="number" min="0" max="100" value="25" />
+        </div>
+      </div>
+      <div class="grid">
+        <label class="checkbox"><input id="enabled" type="checkbox" checked /> enabled</label>
+        <label class="checkbox"><input id="mlEnabled" type="checkbox" /> ml_enabled</label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button id="upsertFeatureBtn">Criar/Atualizar Feature</button>
+        <button class="secondary" id="loadFeaturesBtn">Listar Features</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3) Simulação de Usuários e Eventos</h2>
+      <label for="users">User IDs (um por linha)</label>
+      <textarea id="users">u1001
+u1002
+u1003
+u1004
+u1005
+u1006</textarea>
+      <div class="row" style="margin-top:10px">
+        <button id="simulateBtn">Rodar Simulação</button>
+        <button class="secondary" id="clearBtn">Limpar Resultado</button>
+      </div>
+      <p style="margin-top:8px">Para cada usuário: chama <span class="tag">/evaluate</span> e registra evento em <span class="tag">/events</span>.</p>
+    </section>
+
+    <section class="card">
+      <h2>4) Resultado da Liberação</h2>
+      <div class="metrics">
+        <div class="metric"><span>Total usuários</span><b id="mTotal">0</b></div>
+        <div class="metric"><span>Liberados</span><b id="mEnabled">0</b></div>
+        <div class="metric"><span>Bloqueados</span><b id="mDisabled">0</b></div>
+        <div class="metric"><span>Taxa de liberação</span><b id="mRate">0%</b></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span>Decisão ML</span><b id="mMl">0</b></div>
+        <div class="metric"><span>Decisão Rollout</span><b id="mRollout">0</b></div>
+        <div class="metric"><span>Feature Disabled</span><b id="mFeatureDisabled">0</b></div>
+        <div class="metric"><span>Feature Not Found</span><b id="mFeatureNotFound">0</b></div>
+      </div>
+      <div class="charts">
+        <div class="chart-card">
+          <h3>Liberação (Donut)</h3>
+          <canvas id="releaseChart" width="320" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Fonte da Decisão (Barras)</h3>
+          <canvas id="sourceChart" width="420" height="220"></canvas>
+        </div>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>user_id</th>
+              <th>enabled</th>
+              <th>decision_source</th>
+              <th>score</th>
+              <th>evento</th>
+              <th>status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="./js/app.js"></script>
+</body>
+</html>

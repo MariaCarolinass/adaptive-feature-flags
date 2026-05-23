@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from app.api.v1.router import api_router
 
 from app.core.config import settings
@@ -44,6 +46,10 @@ register_http_stack(app, settings)
 attach_openapi_auth(app)
 
 app.include_router(api_router)
+
+ui_dir = Path(__file__).resolve().parent.parent / "ui"
+if ui_dir.exists():
+    app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
 
 
 @app.get("/", tags=["root"], summary="Root message", description="Simple endpoint that identifies the API.")
