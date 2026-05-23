@@ -7,7 +7,7 @@ import pandas as pd
 from sqlalchemy.engine import Engine
 
 from app.core.exceptions import ValidationError
-from scripts.import_retailrocket import (
+from scripts.import_dataset_csv import (
     REQUIRED_COLUMNS,
     ensure_events_table,
     insert_events,
@@ -21,7 +21,7 @@ class SimulationService:
     def __init__(self, engine: Engine) -> None:
         self._engine = engine
 
-    def import_retailrocket_dataset(
+    def import_dataset_csv(
         self,
         *,
         csv_url: str | None,

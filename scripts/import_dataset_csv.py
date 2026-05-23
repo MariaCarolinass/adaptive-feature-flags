@@ -16,21 +16,21 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.infrastructure.db.db import SessionLocal, init_db
 from app.infrastructure.db.models import Base, EventModel
-from app.infrastructure.integrations.retailrocket_adapter import RetailrocketCSVAdapter
+from app.infrastructure.integrations.ecommerce_adapter import EcommerceCSVAdapter
 
 REQUIRED_COLUMNS = {"timestamp", "visitorid", "event", "itemid"}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Import Retailrocket events.csv into canonical events schema."
+        description="Import e-commerce dataset events.csv into canonical events schema."
     )
-    parser.add_argument("--csv", required=True, help="Path to Retailrocket events.csv file.")
+    parser.add_argument("--csv", required=True, help="Path to e-commerce dataset events.csv file.")
     parser.add_argument(
         "--feature-key-mode",
         choices=["single", "item"],
         default="item",
-        help="'item' -> feature_key=item_<itemid>, 'single' -> feature_key=retailrocket_import.",
+        help="'item' -> feature_key=item_<itemid>, 'single' -> feature_key=dataset_import.",
     )
     parser.add_argument("--limit", type=int, default=None, help="Optional max number of events to import.")
     parser.add_argument("--chunk-size", type=int, default=200000, help="CSV rows processed per chunk.")
@@ -82,7 +82,7 @@ def load_csv_chunks(csv_path: str, chunk_size: int, limit: int | None = None):
 
 
 def normalize_events(df: pd.DataFrame, feature_key_mode: str) -> pd.DataFrame:
-    adapter = RetailrocketCSVAdapter(feature_key_mode=feature_key_mode)
+    adapter = EcommerceCSVAdapter(feature_key_mode=feature_key_mode)
     events = []
     for _, row in df.iterrows():
         mapped = adapter._map_row(row)  # reuse adapter mapping to canonical schema
@@ -176,7 +176,7 @@ def main() -> None:
         raise ValueError("--batch-size must be greater than zero.")
 
     init_db()
-    adapter = RetailrocketCSVAdapter(feature_key_mode=args.feature_key_mode)
+    adapter = EcommerceCSVAdapter(feature_key_mode=args.feature_key_mode)
 
     saved = 0
     processed = 0
@@ -199,8 +199,8 @@ def main() -> None:
 
     saved += _insert_batch(SessionLocal, batch)
 
-    print("Retailrocket import completed.")
-    print("Source: retailrocket")
+    print("e-commerce dataset import completed.")
+    print("Source: ecommerce_dataset")
     print(f"CSV file: {args.csv}")
     print(f"Feature key mode: {args.feature_key_mode}")
     print(f"Events processed: {processed}")

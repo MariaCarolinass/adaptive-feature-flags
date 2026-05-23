@@ -109,7 +109,7 @@ def test_simulate_dataset_import_accepts_csv_url(monkeypatch) -> None:
 
     monkeypatch.setattr(
         simulation_route.simulation_service,
-        "import_retailrocket_dataset",
+        "import_dataset_csv",
         lambda **_kwargs: {
             "source_type": "url",
             "source_value": "https://example.com/events.csv",
@@ -141,7 +141,7 @@ def test_simulate_dataset_import_accepts_csv_file(monkeypatch) -> None:
 
     monkeypatch.setattr(
         simulation_route.simulation_service,
-        "import_retailrocket_dataset",
+        "import_dataset_csv",
         lambda **_kwargs: {
             "source_type": "file",
             "source_value": "events.csv",

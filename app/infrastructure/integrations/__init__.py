@@ -1,10 +1,10 @@
 from app.infrastructure.integrations.base import CSVAdapterConfig, EventCSVAdapter
 from app.infrastructure.integrations.csv_adapter import GenericCSVAdapter
-from app.infrastructure.integrations.retailrocket_adapter import RetailrocketCSVAdapter
+from app.infrastructure.integrations.ecommerce_adapter import EcommerceCSVAdapter
 
 __all__ = [
     "CSVAdapterConfig",
     "EventCSVAdapter",
     "GenericCSVAdapter",
-    "RetailrocketCSVAdapter",
+    "EcommerceCSVAdapter",
 ]

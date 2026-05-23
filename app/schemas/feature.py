@@ -13,9 +13,9 @@ class FeatureCreate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "Retailrocket Item 355908",
+                "name": "e-commerce dataset Item 355908",
                 "key": "item_355908",
-                "description": "Feature linked to Retailrocket item 355908",
+                "description": "Feature linked to e-commerce dataset item 355908",
                 "enabled": True,
                 "rollout_percentage": 35,
                 "ml_enabled": True
@@ -39,9 +39,9 @@ class FeatureResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "name": "Retailrocket Item 355908",
+                "name": "e-commerce dataset Item 355908",
                 "key": "item_355908",
-                "description": "Feature linked to Retailrocket item 355908",
+                "description": "Feature linked to e-commerce dataset item 355908",
                 "enabled": True,
                 "rollout_percentage": 35,
                 "ml_enabled": True,

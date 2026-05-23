@@ -17,7 +17,7 @@ logger = get_logger(__name__)
         "Imports dataset rows from a CSV source into `events` for test simulations.\n\n"
         "- Send exactly one source: `csv_url` OR `csv_file`\n"
         "- Required CSV columns: `timestamp`, `visitorid`, `event`, `itemid`\n"
-        "- Compatible with Retailrocket `events.csv` format"
+        "- Compatible with e-commerce dataset `events.csv` format"
     ),
     response_description="Import summary with processed and inserted row counts.",
 )
@@ -26,7 +26,7 @@ async def simulate_dataset(
     csv_file: UploadFile | None = File(default=None, description="CSV file upload."),
     feature_key_mode: str = Form(
         default="item",
-        description="'item' maps to item_<itemid>, 'single' maps all to retailrocket_import.",
+        description="'item' maps to item_<itemid>, 'single' maps all to dataset_import.",
     ),
     limit: int | None = Form(default=None, description="Optional max number of rows to process."),
     chunk_size: int = Form(default=200000, description="CSV rows processed per chunk."),
@@ -43,7 +43,7 @@ async def simulate_dataset(
 ):
     try:
         csv_bytes = await csv_file.read() if csv_file is not None else None
-        return simulation_service.import_retailrocket_dataset(
+        return simulation_service.import_dataset_csv(
             csv_url=csv_url,
             csv_file_bytes=csv_bytes,
             csv_file_name=csv_file.filename if csv_file else None,

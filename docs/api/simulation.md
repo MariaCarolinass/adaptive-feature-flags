@@ -6,6 +6,8 @@ Importa dados de CSV para simulação de fluxo ponta a ponta (eventos -> treino 
 
 Formato: `multipart/form-data`.
 
+Base usada nos exemplos: https://www.kaggle.com/datasets/retailrocket/ecommerce-dataset/data
+
 Regras:
 
 - Enviar exatamente uma fonte: `csv_url` ou `csv_file`.
@@ -34,7 +36,7 @@ Exemplo com upload:
 
 ```bash
 curl -X POST http://localhost:8000/simulate \
-  -F "csv_file=@dataset-ml/retailrocket/events.csv" \
+  -F "csv_file=@dataset/events.csv" \
   -F "feature_key_mode=single" \
   -F "limit=10000"
 ```

@@ -7,7 +7,7 @@ class EventCreate(BaseModel):
         default=None,
         min_length=1,
         max_length=100,
-        description="Canonical source system identifier (for example: web_app, retailrocket, datadog).",
+        description="Canonical source system identifier (for example: web_app, ecommerce_dataset, datadog).",
     )
     user_id: str = Field(min_length=1, max_length=100, description="User identifier from the source system.")
     feature_key: str = Field(min_length=1, max_length=50, description="Feature key related to this event.")
@@ -22,9 +22,9 @@ class EventCreate(BaseModel):
                 "feature_key": "item_355908",
                 "event_type": "view",
                 "timestamp": "2015-06-02T05:02:12.117000Z",
-                "source": "retailrocket",
+                "source": "ecommerce_dataset",
                 "properties": {
-                    "source": "retailrocket",
+                    "source": "ecommerce_dataset",
                     "raw_itemid": "355908",
                     "raw_event": "view",
                     "transactionid": None
@@ -51,9 +51,9 @@ class EventResponse(BaseModel):
                 "feature_key": "item_355908",
                 "event_type": "view",
                 "timestamp": "2015-06-02T05:02:12.117000Z",
-                "source": "retailrocket",
+                "source": "ecommerce_dataset",
                 "properties": {
-                    "source": "retailrocket",
+                    "source": "ecommerce_dataset",
                     "raw_itemid": "355908",
                     "raw_event": "view",
                     "transactionid": None

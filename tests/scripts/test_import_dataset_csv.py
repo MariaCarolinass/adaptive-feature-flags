@@ -7,11 +7,11 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.infrastructure.db.models import Base
-from app.infrastructure.integrations.retailrocket_adapter import RetailrocketCSVAdapter
-from scripts.import_retailrocket import _insert_batch
+from app.infrastructure.integrations.ecommerce_adapter import EcommerceCSVAdapter
+from scripts.import_dataset_csv import _insert_batch
 
 
-def _write_retailrocket_csv(csv_path, rows: list[dict]) -> None:
+def _write_ecommerce_dataset_csv(csv_path, rows: list[dict]) -> None:
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["timestamp", "visitorid", "event", "itemid", "transactionid"])
         writer.writeheader()
@@ -19,21 +19,21 @@ def _write_retailrocket_csv(csv_path, rows: list[dict]) -> None:
             writer.writerow(row)
 
 
-def test_retailrocket_adapter_maps_to_canonical_schema(tmp_path) -> None:
+def test_ecommerce_adapter_maps_to_canonical_schema(tmp_path) -> None:
     csv_path = tmp_path / "events.csv"
-    _write_retailrocket_csv(
+    _write_ecommerce_dataset_csv(
         csv_path,
         [
             {"timestamp": 1713780000000, "visitorid": "u1", "event": "view", "itemid": 10, "transactionid": ""},
         ],
     )
 
-    adapter = RetailrocketCSVAdapter(feature_key_mode="item")
+    adapter = EcommerceCSVAdapter(feature_key_mode="item")
     events = list(adapter.iter_events(str(csv_path)))
 
     assert len(events) == 1
     event = events[0]
-    assert event["source"] == "retailrocket"
+    assert event["source"] == "ecommerce_dataset"
     assert event["user_id"] == "u1"
     assert event["event_type"] == "view"
     assert event["feature_key"] == "item_10"
@@ -42,9 +42,9 @@ def test_retailrocket_adapter_maps_to_canonical_schema(tmp_path) -> None:
     assert event["properties"]["raw_itemid"] == "10"
 
 
-def test_retailrocket_adapter_respects_limit(tmp_path) -> None:
+def test_ecommerce_adapter_respects_limit(tmp_path) -> None:
     csv_path = tmp_path / "events.csv"
-    _write_retailrocket_csv(
+    _write_ecommerce_dataset_csv(
         csv_path,
         [
             {"timestamp": 1, "visitorid": "u1", "event": "view", "itemid": 1, "transactionid": ""},
@@ -53,7 +53,7 @@ def test_retailrocket_adapter_respects_limit(tmp_path) -> None:
         ],
     )
 
-    adapter = RetailrocketCSVAdapter(feature_key_mode="item")
+    adapter = EcommerceCSVAdapter(feature_key_mode="item")
     events = list(adapter.iter_events(str(csv_path), chunk_size=2, limit=2))
     assert len(events) == 2
 
@@ -67,12 +67,12 @@ def test_insert_batch_persists_rows_with_properties() -> None:
         test_session_factory,
         [
             {
-                "source": "retailrocket",
+                "source": "ecommerce_dataset",
                 "user_id": "u1",
                 "feature_key": "item_10",
                 "event_type": "view",
                 "timestamp": datetime.now(timezone.utc),
-                "properties": {"source": "retailrocket", "raw_itemid": "10"},
+                "properties": {"source": "ecommerce_dataset", "raw_itemid": "10"},
             }
         ],
     )

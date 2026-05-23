@@ -3,8 +3,8 @@ from __future__ import annotations
 """
 Examples:
 python3 scripts/import_events_csv.py \
-  --adapter retailrocket \
-  --csv dataset-ml/retailrocket/events.csv \
+  --adapter ecommerce_dataset \
+  --csv dataset/events.csv \
   --feature-key-mode item \
   --limit 10000
 
@@ -28,14 +28,14 @@ from app.domain.services.event_service import EventService
 from app.infrastructure.db.db import SessionLocal, init_db
 from app.infrastructure.integrations.base import CSVAdapterConfig
 from app.infrastructure.integrations.csv_adapter import GenericCSVAdapter
-from app.infrastructure.integrations.retailrocket_adapter import RetailrocketCSVAdapter
+from app.infrastructure.integrations.ecommerce_adapter import EcommerceCSVAdapter
 from app.infrastructure.repositories.sqlite_event_repository import SqliteEventRepository
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Import CSV events into canonical event schema.")
     parser.add_argument("--csv", required=True, help="Path to CSV file.")
-    parser.add_argument("--adapter", choices=["retailrocket", "generic"], default="retailrocket")
+    parser.add_argument("--adapter", choices=["ecommerce_dataset", "generic"], default="ecommerce_dataset")
     parser.add_argument("--chunk-size", type=int, default=50000)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--feature-key-mode", choices=["item", "single"], default="item")
@@ -49,8 +49,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_adapter(args: argparse.Namespace):
-    if args.adapter == "retailrocket":
-        return RetailrocketCSVAdapter(feature_key_mode=args.feature_key_mode)
+    if args.adapter == "ecommerce_dataset":
+        return EcommerceCSVAdapter(feature_key_mode=args.feature_key_mode)
 
     if not args.source:
         raise ValueError("--source is required when adapter=generic")
