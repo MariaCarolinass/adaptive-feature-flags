@@ -26,6 +26,17 @@ curl http://localhost:8000/health
 curl http://localhost:8000/features
 ```
 
+## Script de seed demo
+
+O script [`scripts/seed_demo.py`](scripts/seed_demo.py) inicializa a base local com dados de exemplo para facilitar testes manuais do fluxo completo.
+
+Ele faz duas coisas:
+
+- cria features demo (se ainda nao existirem);
+- cria eventos sinteticos de usuarios (view, viewed_feature, addtocart e transaction) com `source=seed_demo`.
+
+O script e idempotente: se voce rodar mais de uma vez, ele reaproveita o que ja existe e evita duplicar registros equivalentes.
+
 ## Endpoints principais
 
 - `GET /health`
