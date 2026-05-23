@@ -16,14 +16,22 @@ class EventService:
         event_type: str,
         timestamp: datetime,
         properties: dict[str, str | int | float | bool | None],
+        source: str | None = None,
     ) -> Event:
+        merged_properties = dict(properties)
+        if source:
+            merged_properties["source"] = source
+        elif "source" in merged_properties and merged_properties["source"] is not None:
+            source = str(merged_properties["source"])
+
         event = Event(
             id=None,
+            source=source,
             user_id=user_id,
             feature_key=feature_key,
             event_type=event_type,
             timestamp=timestamp,
-            properties=properties,
+            properties=merged_properties,
         )
         return self.event_repository.create(event)
 
@@ -50,18 +58,26 @@ class EventService:
         event_type: str,
         timestamp: datetime,
         properties: dict[str, str | int | float | bool | None],
+        source: str | None = None,
     ) -> Event:
         existing = self.event_repository.get_by_id(event_id)
         if existing is None:
             raise NotFoundError("Event not found.")
 
+        merged_properties = dict(properties)
+        if source:
+            merged_properties["source"] = source
+        elif "source" in merged_properties and merged_properties["source"] is not None:
+            source = str(merged_properties["source"])
+
         updated = Event(
             id=existing.id,
+            source=source,
             user_id=user_id,
             feature_key=feature_key,
             event_type=event_type,
             timestamp=timestamp,
-            properties=properties,
+            properties=merged_properties,
         )
         return self.event_repository.update(updated)
 

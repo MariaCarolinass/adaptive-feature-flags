@@ -2,17 +2,34 @@
 
 ## Reportando vulnerabilidades
 
-Se você encontrar uma vulnerabilidade de segurança, **não abra uma issue pública** com detalhes de exploração.
+Se você identificar uma vulnerabilidade, não publique detalhes de exploração em issue pública.
 
-Preferência de reporte:
+Processo recomendado:
 
-1. **GitHub Security Advisories**: use “Security” → “Report a vulnerability” (se disponível neste repositório).
-2. Se não estiver disponível, abra uma issue com o título **`[SECURITY]`** e descreva apenas o impacto em alto nível (sem PoC/exploit), solicitando um canal privado.
+1. Abra uma issue com prefixo `[SECURITY]`.
+2. Descreva apenas impacto e contexto em alto nível (sem PoC/exploit).
+3. Solicite um canal privado para envio dos detalhes técnicos.
 
-## Boas práticas adotadas
+## O que incluir no reporte
 
-- **TrustedHostMiddleware** com allowlist configurável (`TRUSTED_HOSTS`)
-- **CORS restritivo** com allowlist configurável (`CORS_ALLOWED_ORIGINS`)
-- **Headers de segurança** em todas as respostas
-- **Erros internos sanitizados**: respostas `500` não vazam stack traces/detalhes
+- Componente afetado.
+- Tipo de impacto (ex.: vazamento de dados, execução indevida, bypass de autorização).
+- Pré-condições para exploração.
+- Severidade estimada.
 
+## Diretrizes de divulgação responsável
+
+- Aguarde triagem antes de divulgar publicamente.
+- Não compartilhe credenciais, payloads sensíveis ou dados de usuários.
+- Coopere com validação e reteste após correção.
+
+## Medidas de segurança já adotadas
+
+- `TrustedHostMiddleware` com allowlist configurável (`TRUSTED_HOSTS`).
+- CORS com allowlist configurável (`CORS_ALLOWED_ORIGINS`).
+- Headers de segurança nas respostas.
+- Respostas `500` sanitizadas (sem stack trace para cliente).
+
+## Escopo desta política
+
+Esta política cobre o código e a operação deste repositório. Dependências de terceiros devem ser reportadas também aos respectivos mantenedores quando aplicável.

@@ -25,6 +25,7 @@ def create(event: EventCreate):
             event_type=event.event_type,
             timestamp=event.timestamp,
             properties=event.properties,
+            source=event.source,
         )
     except AppError as e:
         raise to_http_exception(e)
@@ -69,6 +70,7 @@ def update(event_id: int, event: EventCreate):
             event_type=event.event_type,
             timestamp=event.timestamp,
             properties=event.properties,
+            source=event.source,
         )
     except AppError as e:
         raise to_http_exception(e)

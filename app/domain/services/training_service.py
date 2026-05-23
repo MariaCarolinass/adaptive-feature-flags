@@ -6,12 +6,19 @@ from app.domain.entities.model_metadata import ModelMetadata
 from app.domain.repositories.event_repository import EventRepository
 from app.domain.repositories.model_repository import ModelRepository
 from app.infrastructure.ml.trainer import train_from_events
+from app.infrastructure.observability.metrics import MetricsSink, NoopMetricsSink
 
 
 class TrainingService:
-    def __init__(self, event_repository: EventRepository, model_repository: ModelRepository) -> None:
+    def __init__(
+        self,
+        event_repository: EventRepository,
+        model_repository: ModelRepository,
+        metrics: MetricsSink | None = None,
+    ) -> None:
         self.event_repository = event_repository
         self.model_repository = model_repository
+        self.metrics = metrics or NoopMetricsSink()
 
     def train(self) -> dict:
         started_at = datetime.now(timezone.utc)
@@ -39,6 +46,14 @@ class TrainingService:
 
         saved = self.model_repository.save_status(metadata)
         duration_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
+        self.metrics.timing("training.duration_ms", duration_ms)
+        if saved.metrics:
+            accuracy = saved.metrics.get("accuracy")
+            f1_score = saved.metrics.get("f1_score")
+            if accuracy is not None:
+                self.metrics.gauge("model.accuracy", float(accuracy))
+            if f1_score is not None:
+                self.metrics.gauge("model.f1_score", float(f1_score))
 
         return {
             "status": saved.status,

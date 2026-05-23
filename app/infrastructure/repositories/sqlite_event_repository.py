@@ -15,12 +15,15 @@ class SqliteEventRepository(EventRepository):
 
     def create(self, event: Event) -> Event:
         with self._session_factory() as session:
+            properties = dict(event.properties)
+            if event.source:
+                properties["source"] = event.source
             row = EventModel(
                 user_id=event.user_id,
                 feature_key=event.feature_key,
                 event_type=event.event_type,
                 timestamp=event.timestamp,
-                properties=event.properties,
+                properties=properties,
             )
             session.add(row)
             session.commit()
@@ -60,11 +63,14 @@ class SqliteEventRepository(EventRepository):
             if row is None:
                 raise NotFoundError("Event not found.")
 
+            properties = dict(event.properties)
+            if event.source:
+                properties["source"] = event.source
             row.user_id = event.user_id
             row.feature_key = event.feature_key
             row.event_type = event.event_type
             row.timestamp = event.timestamp
-            row.properties = event.properties
+            row.properties = properties
             session.commit()
         return event
 
@@ -79,12 +85,14 @@ class SqliteEventRepository(EventRepository):
 
     @staticmethod
     def _to_entity(row: EventModel) -> Event:
+        properties = row.properties or {}
+        source_value = properties.get("source")
         return Event(
             id=row.id,
+            source=str(source_value) if source_value is not None else None,
             user_id=row.user_id,
             feature_key=row.feature_key,
             event_type=row.event_type,
             timestamp=row.timestamp,
-            properties=row.properties or {},
+            properties=properties,
         )
-

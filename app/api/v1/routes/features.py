@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.core.exceptions import AppError, NotFoundError, to_http_exception
 from app.core.logging import get_logger
-from app.dependencies import feature_service
-from app.schemas.feature import FeatureCreate, FeatureResponse
+from app.dependencies import feature_service, recommendation_service
+from app.schemas.feature import FeatureCreate, FeatureRecommendationResponse, FeatureResponse
 
 router = APIRouter(prefix="/features", tags=["features"])
 logger = get_logger(__name__)
@@ -107,4 +107,25 @@ def list():
         raise to_http_exception(e)
     except Exception as e:
         logger.exception("Failed to list features")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
+
+
+@router.get(
+    "/{feature_key}/recommendation",
+    response_model=FeatureRecommendationResponse,
+    summary="Get rollout recommendation for feature",
+    description=(
+        "Strategic feature-level recommendation endpoint.\n\n"
+        "Analyzes aggregated evidence and suggests maintain/increase/pause rollout.\n"
+        "This endpoint does not mutate the feature rollout automatically."
+    ),
+    response_description="Recommendation details with explainable metrics.",
+)
+def recommendation(feature_key: str):
+    try:
+        return recommendation_service.get_recommendation(feature_key)
+    except AppError as e:
+        raise to_http_exception(e)
+    except Exception:
+        logger.exception("Failed to generate feature recommendation")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")

@@ -5,6 +5,7 @@ from datetime import datetime
 @dataclass(slots=True)
 class Event:
     id: int | None
+    source: str | None
     user_id: str
     feature_key: str
     event_type: str

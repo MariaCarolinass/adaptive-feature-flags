@@ -14,7 +14,9 @@ logger = get_logger(__name__)
     response_model=EvaluateResponse,
     summary="Evaluate feature for user",
     description=(
-        "Evaluates whether a feature should be enabled for a user.\n\n"
+        "Fast user-level decision endpoint.\n\n"
+        "Evaluates whether a feature should be enabled for a single user.\n"
+        "This endpoint is optimized for low latency and does not train models.\n\n"
         "- Tries model score when `ml_enabled=true` and model status is `ready`\n"
         "- Falls back to deterministic rollout when scoring is unavailable"
     ),
