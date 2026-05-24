@@ -31,6 +31,9 @@ class EvaluateResponse(BaseModel):
     enabled: bool
     decision_source: str
     score: float | None = None
+    threshold: float | None = None
+    threshold_mode: str | None = None
+    experiment: dict | None = None
     model_version: str | None = None
 
     model_config = ConfigDict(
@@ -41,6 +44,13 @@ class EvaluateResponse(BaseModel):
                 "enabled": True,
                 "decision_source": "ml",
                 "score": 0.81,
+                "threshold": 0.2,
+                "threshold_mode": "fixed",
+                "experiment": {
+                    "experiment_id": 1,
+                    "experiment_name": "Checkout CTA A/B",
+                    "variant": "B"
+                },
                 "model_version": "v1",
             }
         }

@@ -11,7 +11,13 @@ class CanonicalEventItemIngest(BaseModel):
     feature_key: str = Field(min_length=1, max_length=50)
     event_type: str = Field(min_length=1, max_length=50)
     timestamp: datetime
-    properties: dict[str, EventPropertyValue] = Field(default_factory=dict)
+    properties: dict[str, EventPropertyValue] = Field(
+        default_factory=dict,
+        description=(
+            "Arbitrary event properties. Optional operational metrics supported: "
+            "`latency_ms` (0-120000), `error_rate` (0-1), `cpu_pct` (0-100), `mem_pct` (0-100)."
+        ),
+    )
 
     model_config = ConfigDict(
         json_schema_extra={

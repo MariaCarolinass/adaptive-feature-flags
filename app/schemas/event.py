@@ -13,7 +13,13 @@ class EventCreate(BaseModel):
     feature_key: str = Field(min_length=1, max_length=50, description="Feature key related to this event.")
     event_type: str = Field(min_length=1, max_length=50, description="Event type (for example: view, addtocart, transaction).")
     timestamp: datetime = Field(description="Event timestamp in UTC.")
-    properties: dict[str, str | int | float | bool | None] = Field(default_factory=dict, description="Additional event properties.")
+    properties: dict[str, str | int | float | bool | None] = Field(
+        default_factory=dict,
+        description=(
+            "Additional event properties. Supports optional operational metrics: "
+            "`latency_ms`, `error_rate`, `cpu_pct`, `mem_pct`."
+        ),
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
