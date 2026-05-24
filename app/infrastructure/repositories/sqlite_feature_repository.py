@@ -22,6 +22,8 @@ class SqliteFeatureRepository(FeatureRepository):
                 enabled=feature.enabled,
                 rollout_percentage=feature.rollout_percentage,
                 ml_enabled=feature.ml_enabled,
+                ml_threshold_mode=feature.ml_threshold_mode,
+                ml_threshold_value=feature.ml_threshold_value,
                 created_at=feature.created_at,
                 updated_at=feature.updated_at,
             )
@@ -60,6 +62,8 @@ class SqliteFeatureRepository(FeatureRepository):
             row.enabled = feature.enabled
             row.rollout_percentage = feature.rollout_percentage
             row.ml_enabled = feature.ml_enabled
+            row.ml_threshold_mode = feature.ml_threshold_mode
+            row.ml_threshold_value = feature.ml_threshold_value
             row.updated_at = feature.updated_at
             session.commit()
         return feature
@@ -83,7 +87,8 @@ class SqliteFeatureRepository(FeatureRepository):
             enabled=row.enabled,
             rollout_percentage=row.rollout_percentage,
             ml_enabled=row.ml_enabled,
+            ml_threshold_mode=row.ml_threshold_mode,
+            ml_threshold_value=row.ml_threshold_value,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
-
