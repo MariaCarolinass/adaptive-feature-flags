@@ -23,7 +23,7 @@ def ingest_events(payload: CanonicalEventBatchIngest):
             source=payload.source,
             events=[event.model_dump() for event in payload.events],
         )
-        return {"saved_events": result["saved_events"], "rejected": 0}
+        return {"saved_events": result["saved_events"], "rejected": result["rejected"]}
     except AppError as e:
         raise to_http_exception(e)
     except Exception:

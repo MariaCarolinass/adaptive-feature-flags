@@ -45,6 +45,31 @@ class TrainingService:
         )
 
         saved = self.model_repository.save_status(metadata)
+        snapshot = {
+            "model_name": saved.model_name,
+            "model_version": saved.model_version,
+            "trained_at": saved.trained_at.isoformat() if saved.trained_at else None,
+            "metrics": saved.metrics,
+            "artifact_path": saved.artifact_path,
+            "process": {
+                "total_events": total_events,
+                "unique_users": unique_users,
+                "positive_events": positive_events,
+                "feature_columns": result.get("feature_columns", []),
+                "benchmark": result.get("benchmark", []),
+                "dataset_profile": result.get("dataset_profile", {}),
+            },
+            "threshold_policy": {
+                "modes_supported": ["fixed", "match_rollout", "maximize_f1"],
+                "fallback_policy": "rollout_deterministic",
+            },
+        }
+        self.model_repository.append_training_run(
+            model_version=saved.model_version or "unknown",
+            trained_at=saved.trained_at or started_at,
+            status=saved.status,
+            snapshot=snapshot,
+        )
         duration_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
         self.metrics.timing("training.duration_ms", duration_ms)
         if saved.metrics:
@@ -68,8 +93,13 @@ class TrainingService:
                 "positive_events": positive_events,
                 "duration_ms": duration_ms,
                 "feature_columns": result.get("feature_columns", []),
+                "benchmark": result.get("benchmark", []),
+                "dataset_profile": result.get("dataset_profile", {}),
             },
         }
 
     def get_status(self) -> ModelMetadata:
         return self.model_repository.get_status()
+
+    def list_training_runs(self, limit: int = 20) -> list[dict]:
+        return self.model_repository.list_training_runs(limit=limit)

@@ -26,6 +26,8 @@ def create(request: FeatureCreate):
             enabled=request.enabled,
             rollout_percentage=request.rollout_percentage,
             ml_enabled=request.ml_enabled,
+            ml_threshold_mode=request.ml_threshold_mode,
+            ml_threshold_value=request.ml_threshold_value,
         )
     except AppError as e:
         raise to_http_exception(e)
@@ -70,6 +72,8 @@ def update(feature_id: int, request: FeatureCreate):
             enabled=request.enabled,
             rollout_percentage=request.rollout_percentage,
             ml_enabled=request.ml_enabled,
+            ml_threshold_mode=request.ml_threshold_mode,
+            ml_threshold_value=request.ml_threshold_value,
         )
     except AppError as e:
         raise to_http_exception(e)
@@ -108,4 +112,3 @@ def list():
     except Exception as e:
         logger.exception("Failed to list features")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
-

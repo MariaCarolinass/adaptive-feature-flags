@@ -17,6 +17,8 @@ class FeatureService:
         enabled: bool,
         rollout_percentage: int,
         ml_enabled: bool,
+        ml_threshold_mode: str = "fixed",
+        ml_threshold_value: float = 0.1,
     ) -> Feature:
         existing = self.feature_repository.get_by_key(key)
         if existing is not None:
@@ -32,6 +34,8 @@ class FeatureService:
             enabled=enabled,
             rollout_percentage=rollout_percentage,
             ml_enabled=ml_enabled,
+            ml_threshold_mode=ml_threshold_mode,
+            ml_threshold_value=ml_threshold_value,
             created_at=now,
             updated_at=now,
         )
@@ -53,6 +57,8 @@ class FeatureService:
         enabled: bool,
         rollout_percentage: int,
         ml_enabled: bool,
+        ml_threshold_mode: str = "fixed",
+        ml_threshold_value: float = 0.1,
     ) -> Feature:
         existing = self.feature_repository.get_by_id(feature_id)
         if existing is None:
@@ -70,6 +76,8 @@ class FeatureService:
             enabled=enabled,
             rollout_percentage=rollout_percentage,
             ml_enabled=ml_enabled,
+            ml_threshold_mode=ml_threshold_mode,
+            ml_threshold_value=ml_threshold_value,
             created_at=existing.created_at,
             updated_at=datetime.now(timezone.utc),
         )

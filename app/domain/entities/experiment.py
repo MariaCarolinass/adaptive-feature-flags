@@ -3,15 +3,13 @@ from datetime import datetime
 
 
 @dataclass(slots=True)
-class Feature:
+class Experiment:
     id: int | None
     name: str
-    key: str
-    description: str | None
+    feature_key: str
+    primary_metric_event: str
+    min_samples_per_variant: int
+    min_lift: float
     enabled: bool
-    rollout_percentage: int
-    ml_enabled: bool
-    ml_threshold_mode: str
-    ml_threshold_value: float
     created_at: datetime
     updated_at: datetime

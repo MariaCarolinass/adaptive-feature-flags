@@ -11,3 +11,11 @@ class ModelRepository(ABC):
     @abstractmethod
     def get_status(self) -> ModelMetadata:
         raise NotImplementedError
+
+    @abstractmethod
+    def append_training_run(self, *, model_version: str, trained_at, status: str, snapshot: dict) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_training_runs(self, limit: int = 20) -> list[dict]:
+        raise NotImplementedError

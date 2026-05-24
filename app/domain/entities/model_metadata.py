@@ -8,5 +8,5 @@ class ModelMetadata:
     model_name: str | None
     model_version: str | None
     trained_at: datetime | None
-    metrics: dict[str, float] | None
+    metrics: dict | None
     artifact_path: str | None = None

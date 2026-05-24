@@ -41,3 +41,18 @@ def status():
     except Exception as e:
         logger.exception("Failed to retrieve model status")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")
+
+
+@router.get(
+    "/model/runs",
+    summary="List training runs",
+    description="Returns recent model training snapshots for governance and audit.",
+)
+def list_runs(limit: int = 20):
+    try:
+        return {"runs": training_service.list_training_runs(limit=limit)}
+    except AppError as e:
+        raise to_http_exception(e)
+    except Exception:
+        logger.exception("Failed to retrieve training runs")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error.")

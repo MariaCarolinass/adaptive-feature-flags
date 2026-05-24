@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from app.domain.repositories.event_repository import EventRepository
 from app.domain.repositories.feature_repository import FeatureRepository
 from app.domain.repositories.model_repository import ModelRepository
+from app.domain.services.experiment_service import ExperimentService
 from app.infrastructure.ml.feature_builder import FeatureBuilder
 from app.infrastructure.ml.predictor import ModelPredictor
 from app.infrastructure.ml.serializer import ModelSerializer
@@ -28,11 +29,13 @@ class EvaluationService:
         feature_repository: FeatureRepository,
         event_repository: EventRepository,
         model_repository: ModelRepository,
+        experiment_service: ExperimentService,
         metrics: MetricsSink | None = None,
     ) -> None:
         self.feature_repository = feature_repository
         self.event_repository = event_repository
         self.model_repository = model_repository
+        self.experiment_service = experiment_service
         self.metrics = metrics or NoopMetricsSink()
 
     def _stable_percentage(self, user_id: str, feature_key: str) -> int:
@@ -74,6 +77,10 @@ class EvaluationService:
             }
 
         model_status = self.model_repository.get_status()
+        experiment = self.experiment_service.maybe_build_context(
+            feature_key=feature_key,
+            user_id=user["user_id"],
+        )
 
         if feature.ml_enabled and model_status.status == "ready" and model_status.artifact_path:
             score = self._predict_score(
@@ -82,7 +89,13 @@ class EvaluationService:
                 reference_timestamp=model_status.trained_at,
             )
             if score is not None:
-                enabled = score >= 0.1
+                threshold = self._resolve_ml_threshold(
+                    rollout_percentage=feature.rollout_percentage,
+                    mode=feature.ml_threshold_mode,
+                    fixed_value=feature.ml_threshold_value,
+                    model_metrics=model_status.metrics or {},
+                )
+                enabled = score >= threshold
                 self.metrics.increment(
                     "evaluation.decision_source",
                     tags={"source": "ml"},
@@ -95,6 +108,9 @@ class EvaluationService:
                     "enabled": enabled,
                     "decision_source": "ml",
                     "score": score,
+                    "threshold": threshold,
+                    "threshold_mode": feature.ml_threshold_mode,
+                    "experiment": experiment,
                     "model_version": model_status.model_version,
                 }
 
@@ -113,8 +129,28 @@ class EvaluationService:
             "enabled": enabled,
             "decision_source": "rollout",
             "score": None,
+            "threshold": None,
+            "threshold_mode": None,
+            "experiment": experiment,
             "model_version": None,
         }
+
+    @staticmethod
+    def _resolve_ml_threshold(
+        *,
+        rollout_percentage: int,
+        mode: str,
+        fixed_value: float,
+        model_metrics: dict,
+    ) -> float:
+        if mode == "match_rollout":
+            # Heuristic: approximate coverage target by inverse threshold.
+            return max(0.0, min(1.0, 1.0 - (rollout_percentage / 100.0)))
+        if mode == "maximize_f1":
+            tuned = model_metrics.get("best_threshold_by_f1")
+            if isinstance(tuned, (int, float)):
+                return max(0.0, min(1.0, float(tuned)))
+        return max(0.0, min(1.0, fixed_value))
 
     def _predict_score(
         self,
