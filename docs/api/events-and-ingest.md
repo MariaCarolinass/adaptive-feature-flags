@@ -67,3 +67,15 @@ Response `201`:
   "rejected": 0
 }
 ```
+
+Regras de robustez aplicadas na ingestão:
+
+- Eventos com timestamp no futuro são rejeitados.
+- Campos obrigatórios vazios/inválidos são rejeitados.
+- Métricas operacionais opcionais em `properties` são validadas:
+  - `latency_ms` entre `0` e `120000`
+  - `error_rate` entre `0` e `1`
+  - `cpu_pct` entre `0` e `100`
+  - `mem_pct` entre `0` e `100`
+- Quando houver experimento A/B ativo para a `feature_key`, a API anexa `ab_variant` no evento persistido.
+- A API continua processando o lote e retorna `saved_events` e `rejected`.

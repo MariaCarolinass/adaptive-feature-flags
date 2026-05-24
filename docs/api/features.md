@@ -13,7 +13,9 @@ Request:
   "description": "Checkout variant",
   "enabled": true,
   "rollout_percentage": 10,
-  "ml_enabled": true
+  "ml_enabled": true,
+  "ml_threshold_mode": "maximize_f1",
+  "ml_threshold_value": 0.1
 }
 ```
 
@@ -28,6 +30,8 @@ Response `201`:
   "enabled": true,
   "rollout_percentage": 10,
   "ml_enabled": true,
+  "ml_threshold_mode": "maximize_f1",
+  "ml_threshold_value": 0.1,
   "created_at": "2026-05-23T12:00:00Z",
   "updated_at": "2026-05-23T12:00:00Z"
 }

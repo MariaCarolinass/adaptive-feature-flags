@@ -9,6 +9,7 @@ Documentação funcional dos endpoints expostos pela API.
 - `events-and-ingest.md`
 - `evaluation.md`
 - `training-and-model-status.md`
+- `experiments.md`
 
 ## Convenções
 
@@ -32,6 +33,7 @@ Paths isentos por padrão:
 - `/docs`
 - `/redoc`
 - `/openapi.json`
+- `/metrics`
 
 Emissão de token:
 

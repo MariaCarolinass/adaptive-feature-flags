@@ -29,9 +29,22 @@ Exemplo de resposta com machine learning:
   "enabled": true,
   "decision_source": "ml",
   "score": 0.42,
+  "threshold": 0.2,
+  "threshold_mode": "fixed",
+  "experiment": {
+    "experiment_id": 1,
+    "experiment_name": "Checkout CTA A/B",
+    "variant": "B"
+  },
   "model_version": "v1"
 }
 ```
+
+`threshold_mode` suportados:
+
+- `fixed`
+- `match_rollout`
+- `maximize_f1` (usa threshold calibrado salvo no treino)
 
 Exemplo de resposta com fallback:
 
