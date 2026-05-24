@@ -50,7 +50,7 @@ def test_ingest_events_batch_returns_saved_count(monkeypatch) -> None:
     monkeypatch.setattr(
         ingest_route.ingest_service,
         "ingest_events",
-        lambda **_kwargs: {"saved_events": 2},
+        lambda **_kwargs: {"saved_events": 2, "rejected": 0},
     )
 
     payload = {
@@ -115,3 +115,13 @@ def test_ingest_events_batch_returns_typed_error(monkeypatch) -> None:
         body = response.json()
         assert body["detail"]["code"] == "validation_error"
         assert body["detail"]["message"] == "events must contain at least one item."
+
+
+def test_metrics_endpoint_returns_snapshot() -> None:
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.get("/metrics")
+        assert response.status_code == 200
+        payload = response.json()
+        assert "counters" in payload
+        assert "gauges" in payload
+        assert "timings_ms" in payload

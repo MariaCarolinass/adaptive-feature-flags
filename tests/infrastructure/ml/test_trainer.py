@@ -60,8 +60,15 @@ def test_train_from_events_saves_model_and_returns_metadata(monkeypatch: pytest.
 
     result = trainer.train_from_events(events)
 
-    assert result["model_name"] == "random_forest"
+    assert result["model_name"] in {"random_forest", "logistic_regression", "gradient_boosting"}
     assert result["model_version"] == "v1"
     assert result["artifact_path"] == "/tmp/test-model.joblib"
     assert "accuracy" in result["metrics"]
+    assert "precision" in result["metrics"]
+    assert "recall" in result["metrics"]
     assert "f1_score" in result["metrics"]
+    assert "roc_auc" in result["metrics"]
+    assert "confusion_matrix" in result["metrics"]
+    assert len(result["benchmark"]) == 3
+    assert "dataset_profile" in result
+    assert "rows" in result["dataset_profile"]

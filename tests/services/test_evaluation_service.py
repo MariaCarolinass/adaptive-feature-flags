@@ -41,6 +41,15 @@ class _ModelRepo:
         return self._metadata
 
 
+class _ExperimentService:
+    def maybe_build_context(self, *, feature_key: str, user_id: str) -> dict | None:
+        return {
+            "experiment_id": 1,
+            "experiment_name": "Checkout A/B",
+            "variant": "A",
+        }
+
+
 def _feature(*, enabled: bool = True, ml_enabled: bool = True) -> Feature:
     now = datetime.now(timezone.utc)
     return Feature(
@@ -51,6 +60,8 @@ def _feature(*, enabled: bool = True, ml_enabled: bool = True) -> Feature:
         enabled=enabled,
         rollout_percentage=20,
         ml_enabled=ml_enabled,
+        ml_threshold_mode="fixed",
+        ml_threshold_value=0.1,
         created_at=now,
         updated_at=now,
     )
@@ -126,6 +137,7 @@ def test_evaluate_uses_ml_score_when_model_is_ready(monkeypatch) -> None:
                 artifact_path="/tmp/model.joblib",
             )
         ),
+        experiment_service=_ExperimentService(),
     )
 
     result = service.evaluate("feature_a", {"user_id": "u1"})
@@ -133,6 +145,8 @@ def test_evaluate_uses_ml_score_when_model_is_ready(monkeypatch) -> None:
     assert result["decision_source"] == "ml"
     assert result["enabled"] is True
     assert result["score"] == 0.91
+    assert result["threshold"] == 0.1
+    assert result["threshold_mode"] == "fixed"
     assert result["model_version"] == "v1"
 
 
@@ -164,9 +178,57 @@ def test_evaluate_falls_back_to_rollout_when_prediction_fails(monkeypatch) -> No
                 artifact_path="/tmp/model.joblib",
             )
         ),
+        experiment_service=_ExperimentService(),
     )
 
     result = service.evaluate("feature_a", {"user_id": "u1"})
 
     assert result["decision_source"] == "rollout"
     assert result["score"] is None
+    assert result["threshold"] is None
+    assert result["threshold_mode"] is None
+
+
+def test_evaluate_uses_match_rollout_threshold(monkeypatch) -> None:
+    class _Serializer:
+        def load_feature_columns(self, _artifact_path: str) -> list[str]:
+            return ["unique_features", "active_days"]
+
+    class _Predictor:
+        def __init__(self, _: str) -> None:
+            pass
+
+        def predict_score(self, payload: dict) -> float:
+            return 0.75
+
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelSerializer", _Serializer)
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelPredictor", _Predictor)
+
+    feature = _feature(enabled=True, ml_enabled=True)
+    feature.rollout_percentage = 20
+    feature.ml_threshold_mode = "match_rollout"
+    feature.ml_threshold_value = 0.2
+
+    service = EvaluationService(
+        feature_repository=_FeatureRepo(feature),
+        event_repository=_EventRepo([_event("u1", "transaction")]),
+        model_repository=_ModelRepo(
+            ModelMetadata(
+                status="ready",
+                model_name="random_forest",
+                model_version="v1",
+                trained_at=datetime.now(timezone.utc),
+                metrics={"accuracy": 0.8},
+                artifact_path="/tmp/model.joblib",
+            )
+        ),
+        experiment_service=_ExperimentService(),
+    )
+
+    result = service.evaluate("feature_a", {"user_id": "u1"})
+
+    assert result["decision_source"] == "ml"
+    assert result["threshold_mode"] == "match_rollout"
+    assert result["threshold"] == 0.8
+    assert result["enabled"] is False
+    assert result["experiment"]["variant"] == "A"

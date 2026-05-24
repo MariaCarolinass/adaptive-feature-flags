@@ -36,6 +36,12 @@ class _ModelRepo:
             artifact_path=None,
         )
 
+    def append_training_run(self, *, model_version: str, trained_at, status: str, snapshot: dict) -> None:
+        return
+
+    def list_training_runs(self, limit: int = 20) -> list[dict]:
+        return []
+
 
 def _event(event_type: str) -> Event:
     return Event(
@@ -79,9 +85,23 @@ def test_training_service_returns_process_details(monkeypatch: pytest.MonkeyPatc
             "model_name": "random_forest",
             "model_version": "v1",
             "trained_at": datetime.now(timezone.utc),
-            "metrics": {"accuracy": 0.8, "f1_score": 0.7},
+            "metrics": {
+                "accuracy": 0.8,
+                "precision": 0.76,
+                "recall": 0.72,
+                "f1_score": 0.7,
+                "roc_auc": 0.81,
+                "confusion_matrix": {
+                    "true_negative": 10,
+                    "false_positive": 2,
+                    "false_negative": 3,
+                    "true_positive": 7,
+                },
+            },
             "artifact_path": "storage/models/v1.joblib",
             "feature_columns": ["total_events", "positive_events"],
+            "benchmark": [{"model_name": "random_forest", "f1_score": 0.7}],
+            "dataset_profile": {"rows": 3, "train_rows": 2, "test_rows": 1, "positive_rate": 0.33},
         }
 
     monkeypatch.setattr("app.domain.services.training_service.train_from_events", _ok)
@@ -95,4 +115,6 @@ def test_training_service_returns_process_details(monkeypatch: pytest.MonkeyPatc
     assert result["process"]["unique_users"] == 1
     assert result["process"]["positive_events"] == 1
     assert result["process"]["feature_columns"] == ["total_events", "positive_events"]
+    assert result["process"]["benchmark"] == [{"model_name": "random_forest", "f1_score": 0.7}]
+    assert result["process"]["dataset_profile"]["rows"] == 3
     assert isinstance(result["process"]["duration_ms"], int)

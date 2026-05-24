@@ -16,6 +16,8 @@ def _feature(
     enabled: bool = True,
     rollout_percentage: int = 10,
     ml_enabled: bool = False,
+    ml_threshold_mode: str = "fixed",
+    ml_threshold_value: float = 0.1,
 ) -> Feature:
     now = datetime.now(timezone.utc)
     return Feature(
@@ -26,6 +28,8 @@ def _feature(
         enabled=enabled,
         rollout_percentage=rollout_percentage,
         ml_enabled=ml_enabled,
+        ml_threshold_mode=ml_threshold_mode,
+        ml_threshold_value=ml_threshold_value,
         created_at=now,
         updated_at=now,
     )
@@ -67,6 +71,8 @@ def test_update_feature_persists_changes(session_factory) -> None:
     feature.name = "Atualizada"
     feature.rollout_percentage = 80
     feature.ml_enabled = True
+    feature.ml_threshold_mode = "match_rollout"
+    feature.ml_threshold_value = 0.35
     feature.updated_at = datetime.now(timezone.utc)
     updated = repo.update(feature)
     loaded = repo.get_by_id(updated.id)
@@ -75,6 +81,8 @@ def test_update_feature_persists_changes(session_factory) -> None:
     assert loaded.name == "Atualizada"
     assert loaded.rollout_percentage == 80
     assert loaded.ml_enabled is True
+    assert loaded.ml_threshold_mode == "match_rollout"
+    assert loaded.ml_threshold_value == 0.35
 
 
 def test_delete_feature_removes_record(session_factory) -> None:
@@ -96,4 +104,3 @@ def test_update_feature_requires_existing_id(session_factory) -> None:
 
     with pytest.raises(NotFoundError, match="Feature not found"):
         repo.update(feature)
-
