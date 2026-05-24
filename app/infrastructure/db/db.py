@@ -25,4 +25,23 @@ def init_db() -> None:
     from app.infrastructure.db.models import Base
 
     Base.metadata.create_all(bind=engine)
+    _apply_sqlite_feature_threshold_migration()
 
+
+def _apply_sqlite_feature_threshold_migration() -> None:
+    if not str(engine.url).startswith("sqlite:"):
+        return
+
+    with engine.begin() as conn:
+        columns = {
+            row[1]
+            for row in conn.exec_driver_sql("PRAGMA table_info(features)").fetchall()
+        }
+        if "ml_threshold_mode" not in columns:
+            conn.exec_driver_sql(
+                "ALTER TABLE features ADD COLUMN ml_threshold_mode VARCHAR(30) NOT NULL DEFAULT 'fixed'"
+            )
+        if "ml_threshold_value" not in columns:
+            conn.exec_driver_sql(
+                "ALTER TABLE features ADD COLUMN ml_threshold_value FLOAT NOT NULL DEFAULT 0.1"
+            )
