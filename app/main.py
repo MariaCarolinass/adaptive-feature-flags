@@ -26,14 +26,18 @@ app = FastAPI(
         "using safe fallback behavior when model scoring is unavailable.\n\n"
         "### Main Flows\n"
         "- Feature lifecycle: create, list, update, and delete via `/features`\n"
-        "- Event ingestion: single events via `/events` and batch ingestion via `/ingest/events`\n"
+        "- Event ingestion: single events via `/events` and batch ingestion via `/ingest/events` "
+        "(with operational-metric validation and partial rejection accounting)\n"
         "- Model training: synchronous `/train`\n"
         "- Online decision: user-level evaluation via `/evaluate`\n"
-        "- Model observability: current status via `/model/status`\n\n"
+        "- Experimentation: A/B-lite setup and evaluation via `/experiments`\n"
+        "- Model governance: current status via `/model/status` and training history via `/model/runs`\n"
+        "- Operational observability: in-memory metrics snapshot via `/metrics`\n\n"
         "### Design Principles\n"
         "- Predictable behavior with deterministic rollout\n"
         "- Progressive intelligence with machine learning when ready\n"
-        "- Resilience through fallback-first decision flow"
+        "- Resilience through fallback-first decision flow\n"
+        "- Incremental experimentation with deterministic A/B allocation"
     ),
     docs_url="/docs" if settings.enable_docs else None,
     redoc_url="/redoc" if settings.enable_docs else None,
