@@ -33,6 +33,10 @@ class MetricsSink(ABC):
     def timing(self, name: str, value_ms: int, *, tags: Tags | None = None) -> None:
         raise NotImplementedError
 
+    @abstractmethod
+    def snapshot(self) -> dict[str, Any]:
+        raise NotImplementedError
+
 
 class NoopMetricsSink(MetricsSink):
     def increment(self, name: str, value: int = 1, *, tags: Tags | None = None) -> None:
@@ -43,6 +47,9 @@ class NoopMetricsSink(MetricsSink):
 
     def timing(self, name: str, value_ms: int, *, tags: Tags | None = None) -> None:
         return
+
+    def snapshot(self) -> dict[str, Any]:
+        return {"counters": {}, "gauges": {}, "timings_ms": {}}
 
 
 @dataclass(slots=True)
@@ -77,6 +84,14 @@ class InMemoryLoggingMetricsSink(MetricsSink):
             self.timings_ms[key] = int(value_ms)
         logger.info("metric.timing name=%s value_ms=%s tags=%s", name, value_ms, tags or {})
 
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "counters": dict(self.counters),
+                "gauges": dict(self.gauges),
+                "timings_ms": dict(self.timings_ms),
+            }
+
     @staticmethod
     def _key(name: str, tags: Tags | None) -> str:
         if not tags:
@@ -87,4 +102,3 @@ class InMemoryLoggingMetricsSink(MetricsSink):
 
 # Default process-level sink used by services.
 metrics_sink: MetricsSink = InMemoryLoggingMetricsSink()
-
