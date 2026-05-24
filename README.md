@@ -112,7 +112,11 @@ curl -H "Authorization: Bearer <token-jwt>" http://localhost:8000/features
 - `POST /ingest/events`
 - `POST /train`
 - `GET /model/status`
+- `GET /model/runs`
 - `POST /evaluate`
+- `GET /metrics`
+- `POST|GET /experiments`
+- `GET /experiments/{id}/result`
 
 ## Documentação
 
