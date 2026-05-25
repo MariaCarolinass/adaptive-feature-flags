@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.api.v1.router import api_router
 
@@ -52,14 +53,19 @@ attach_openapi_auth(app)
 app.include_router(api_router)
 
 ui_dir = Path(__file__).resolve().parent.parent / "ui"
-if ui_dir.exists():
-    app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
 
-
-@app.get("/", tags=["root"], summary="Root message", description="Simple endpoint that identifies the API.")
+@app.get("/", tags=["root"], summary="UI dashboard", description="Serves the web UI dashboard.")
 def root():
+    index_file = ui_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file, headers={"Cache-Control": "no-store"})
     return {"message": settings.app_name}
+
 
 @app.get("/health", tags=["health"], summary="Healthcheck", description="Checks if the API is responsive.")
 def healthcheck():
     return {"status": "ok"}
+
+
+if ui_dir.exists():
+    app.mount("/", StaticFiles(directory=ui_dir, html=True), name="ui")
