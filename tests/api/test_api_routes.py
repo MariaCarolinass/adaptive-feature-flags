@@ -12,6 +12,14 @@ def test_health_endpoint_returns_ok() -> None:
         assert response.json() == {"status": "ok"}
 
 
+def test_root_serves_ui_index() -> None:
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.get("/")
+        assert response.status_code == 200
+        assert "text/html" in response.headers.get("content-type", "")
+        assert "<!doctype html>" in response.text.lower()
+
+
 def test_feature_retrieve_returns_not_found_with_typed_payload() -> None:
     with TestClient(app, base_url="http://localhost") as client:
         response = client.get("/features/999999")
