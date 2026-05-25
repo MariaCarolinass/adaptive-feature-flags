@@ -23,6 +23,24 @@ Inicie a API:
 uvicorn app.main:app --reload
 ```
 
+Abra a interface web:
+
+```text
+http://localhost:8000/
+```
+
+A tela inicial carrega o painel do produto com navegação lateral para resumo, insights, regras, avaliação, atividades e treinos. A interface usa a própria API para listar regras, carregar eventos, avaliar usuários, registrar atividades e consultar o estado do modelo.
+
+Acesse a documentação interativa da API:
+
+```text
+http://localhost:8000/docs
+http://localhost:8000/redoc
+http://localhost:8000/openapi.json
+```
+
+Essas páginas ficam disponíveis quando `ENABLE_DOCS=true` no `.env`.
+
 Teste rápido de disponibilidade:
 
 ```bash
@@ -106,6 +124,10 @@ curl -H "Authorization: Bearer <token-jwt>" http://localhost:8000/features
 
 ## Endpoints principais
 
+- `GET /` - interface web
+- `GET /docs` - Swagger UI, quando `ENABLE_DOCS=true`
+- `GET /redoc` - ReDoc, quando `ENABLE_DOCS=true`
+- `GET /openapi.json` - schema OpenAPI, quando `ENABLE_DOCS=true`
 - `GET /health`
 - `POST|GET|PUT|DELETE /features`
 - `POST|GET /events`
