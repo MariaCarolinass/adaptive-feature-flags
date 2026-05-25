@@ -12,6 +12,7 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 - Fluxo detalhado de ML e decisão online: `implementation/ml-decision-flow-in-depth.md`
 - Guia de módulos de suporte (core/integrations/observability/sdk): `implementation/module-guide-core-and-support.md`
 - Operação local e rotina de desenvolvimento: `operations/development-playbook.md`
+- Guia da interface web: `operations/ui-dashboard.md`
 - Roadmap incremental: `roadmap.md`
 
 ## Estrutura
