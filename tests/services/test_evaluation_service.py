@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.domain.entities.event import Event
+from app.domain.entities.evaluation import EvaluationRecord
 from app.domain.entities.feature import Feature
 from app.domain.entities.model_metadata import ModelMetadata
 from app.domain.services.evaluation_service import EvaluationService
@@ -48,6 +49,24 @@ class _ExperimentService:
             "experiment_name": "Checkout A/B",
             "variant": "A",
         }
+
+
+class _EvaluationRepo:
+    def __init__(self) -> None:
+        self.rows: list[EvaluationRecord] = []
+
+    def create(self, evaluation: EvaluationRecord) -> EvaluationRecord:
+        evaluation.id = len(self.rows) + 1
+        self.rows.append(evaluation)
+        return evaluation
+
+    def list(self, limit: int = 50) -> list[EvaluationRecord]:
+        return self.rows[-limit:][::-1]
+
+    def delete_all(self) -> int:
+        deleted = len(self.rows)
+        self.rows = []
+        return deleted
 
 
 def _feature(*, enabled: bool = True, ml_enabled: bool = True) -> Feature:
@@ -232,3 +251,44 @@ def test_evaluate_uses_match_rollout_threshold(monkeypatch) -> None:
     assert result["threshold"] == 0.8
     assert result["enabled"] is False
     assert result["experiment"]["variant"] == "A"
+
+
+def test_evaluate_persists_record_when_repository_is_available(monkeypatch) -> None:
+    class _Serializer:
+        def load_feature_columns(self, _artifact_path: str) -> list[str]:
+            return ["unique_features", "active_days"]
+
+    class _Predictor:
+        def __init__(self, _: str) -> None:
+            pass
+
+        def predict_score(self, payload: dict) -> float:
+            return 0.61
+
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelSerializer", _Serializer)
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelPredictor", _Predictor)
+
+    repo = _EvaluationRepo()
+    service = EvaluationService(
+        feature_repository=_FeatureRepo(_feature()),
+        event_repository=_EventRepo([_event("u1", "transaction")]),
+        model_repository=_ModelRepo(
+            ModelMetadata(
+                status="ready",
+                model_name="random_forest",
+                model_version="v1",
+                trained_at=datetime.now(timezone.utc),
+                metrics={"accuracy": 0.8},
+                artifact_path="/tmp/model.joblib",
+            )
+        ),
+        experiment_service=_ExperimentService(),
+        evaluation_repository=repo,
+    )
+
+    result = service.evaluate("feature_a", {"user_id": "u1"})
+
+    assert result["decision_source"] in {"ml", "rollout"}
+    assert len(repo.rows) == 1
+    assert repo.rows[0].feature_key == "feature_a"
+    assert repo.rows[0].user_id == "u1"
