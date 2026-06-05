@@ -4,6 +4,10 @@
 
 Executa treino síncrono do modelo com base nos eventos persistidos.
 
+O treino compara três candidatos (`random_forest`, `logistic_regression` e `gradient_boosting`) e escolhe automaticamente o modelo com maior `f1_score` no conjunto de teste. Esse vencedor vira o modelo atual exposto em `/model/status` e usado pelo `/evaluate` quando `ml_enabled=true`.
+
+O bloco `feature_columns` no retorno do treino lista as variáveis agregadas por usuário que foram usadas no modelo. Entre elas estão `unique_features`, `active_days`, `avg_hour`, `avg_day_of_week`, `hours_since_last_event` e `events_per_day`.
+
 Exemplo de resposta:
 
 ```json
