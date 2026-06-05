@@ -13,7 +13,15 @@ class ModelRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def append_training_run(self, *, model_version: str, trained_at, status: str, snapshot: dict) -> None:
+    def append_training_run(
+        self,
+        *,
+        model_version: str,
+        trained_at,
+        status: str,
+        duration_ms: int | None,
+        snapshot: dict,
+    ) -> None:
         raise NotImplementedError
 
     @abstractmethod
