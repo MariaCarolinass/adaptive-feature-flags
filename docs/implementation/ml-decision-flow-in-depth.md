@@ -64,16 +64,22 @@ Transformação para dataset:
 
 Features usadas no treino (MVP):
 
-- `unique_features`
-- `active_days`
-- `avg_hour`
-- `avg_day_of_week`
-- `hours_since_last_event`
-- `events_per_day`
+Essas colunas são calculadas por usuário a partir dos eventos brutos:
+
+- `unique_features`: quantidade de `feature_key` distintos acessados pelo usuário.
+- `active_days`: quantidade de dias diferentes com evento.
+- `avg_hour`: média da hora dos eventos do usuário.
+- `avg_day_of_week`: média do dia da semana dos eventos.
+- `hours_since_last_event`: horas desde o último evento até o timestamp de referência do treino.
+- `events_per_day`: total de eventos dividido pelos dias ativos do usuário.
 
 Treinamento:
 
-- Modelo: `RandomForestClassifier(class_weight="balanced", random_state=42)`.
+- Modelos candidatos:
+  - `RandomForestClassifier(class_weight="balanced", random_state=42)`
+  - `LogisticRegression(class_weight="balanced", random_state=42, max_iter=1000)`
+  - `GradientBoostingClassifier(random_state=42)`
+- Seleção: o treino escolhe automaticamente o candidato com maior `f1_score` no conjunto de teste.
 - Split: `train_test_split(..., stratify=y)`.
 - Regras mínimas:
   - ao menos 2 classes em `y`;
