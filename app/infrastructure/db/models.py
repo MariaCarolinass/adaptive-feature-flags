@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -39,6 +39,22 @@ class EventModel(Base):
     properties: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
 
+class EvaluationModel(Base):
+    __tablename__ = "evaluations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    feature_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    decision_source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    threshold_mode: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    experiment: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    model_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+
+
 class ModelMetadataModel(Base):
     __tablename__ = "model_metadata"
 
@@ -58,6 +74,7 @@ class ModelTrainingRunModel(Base):
     model_version: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     trained_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     snapshot: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
 
