@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timezone
+
 from sqlalchemy.orm import sessionmaker
 
 from app.domain.entities.model_metadata import ModelMetadata
@@ -47,17 +49,26 @@ class SqliteModelRepository(ModelRepository):
                 status=row.status,
                 model_name=row.model_name,
                 model_version=row.model_version,
-                trained_at=row.trained_at,
+                trained_at=self._as_utc(row.trained_at),
                 metrics=row.metrics,
                 artifact_path=row.artifact_path,
             )
 
-    def append_training_run(self, *, model_version: str, trained_at, status: str, snapshot: dict) -> None:
+    def append_training_run(
+        self,
+        *,
+        model_version: str,
+        trained_at,
+        status: str,
+        duration_ms: int | None,
+        snapshot: dict,
+    ) -> None:
         with self._session_factory() as session:
             row = ModelTrainingRunModel(
                 model_version=model_version,
                 trained_at=trained_at,
                 status=status,
+                duration_ms=duration_ms,
                 snapshot=snapshot,
             )
             session.add(row)
@@ -75,9 +86,20 @@ class SqliteModelRepository(ModelRepository):
                 {
                     "id": row.id,
                     "model_version": row.model_version,
-                    "trained_at": row.trained_at,
+                    "trained_at": self._as_utc(row.trained_at),
                     "status": row.status,
+                    "duration_ms": row.duration_ms
+                    if row.duration_ms is not None
+                    else (row.snapshot or {}).get("process", {}).get("duration_ms"),
                     "snapshot": row.snapshot,
                 }
                 for row in rows
             ]
+
+    @staticmethod
+    def _as_utc(value):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
