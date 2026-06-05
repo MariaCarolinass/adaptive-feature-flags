@@ -11,12 +11,18 @@ const state = {
   evaluations: [],
   events: [],
   experiments: [],
+  selectedExperimentId: Number(localStorage.getItem("adaptiveFlags.experimentId")) || null,
+  experimentResult: null,
+  experimentResultMessage: "Selecione um experimento para ver o resultado.",
+  modelRuns: [],
   experimentsCount: 0,
   modelStatus: null,
+  modelStatusMessage: "Use as ações desta página para carregar informações do modelo.",
   lastSyncAt: null,
   lastStatusPayload: "Nenhum detalhe disponível.",
   statusHistory: [],
   featureFilter: "",
+  eventsFilter: "",
   eventsPage: 1,
   eventsPerPage: 25,
   charts: { release: null, source: null, timeline: null },
@@ -84,10 +90,223 @@ function setStatus(message, data = null) {
 }
 
 function setModelStatus(message, data = null) {
-  const parts = [message];
-  if (data !== null) parts.push(typeof data === "string" ? data : JSON.stringify(data, null, 2));
+  state.modelStatusMessage = message || "Modelo carregado.";
+  if (data !== null) {
+    state.lastStatusPayload = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  }
+  renderModelStatus();
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[ch]);
+}
+
+function formatCompactNumber(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return value == null ? "-" : String(value);
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(num);
+}
+
+function formatPercentage(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return value == null ? "-" : String(value);
+  const pct = num <= 1 ? num * 100 : num;
+  return `${pct.toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+function formatSignedPercentage(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return value == null ? "-" : String(value);
+  const pct = Math.abs(num) <= 1 ? num * 100 : num;
+  const rounded = Math.abs(pct).toFixed(1).replace(/\.0$/, "");
+  if (pct > 0) return `+${rounded}%`;
+  if (pct < 0) return `-${rounded}%`;
+  return "0%";
+}
+
+function formatDurationMs(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return value == null ? "-" : String(value);
+  if (num < 1000) return `${Math.round(num)} ms`;
+  const seconds = num / 1000;
+  return `${seconds < 10 ? seconds.toFixed(1) : seconds.toFixed(0)} s`;
+}
+
+function friendlyModelStatus(status) {
+  const labels = {
+    ready: "Pronto",
+    training: "Treinando",
+    running: "Treinando",
+    idle: "Sem treino",
+    pending: "Em espera",
+    failed: "Falha",
+    error: "Falha",
+  };
+  if (labels[status]) return labels[status];
+  if (!status) return "Sem status";
+  const label = status.replace(/_/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function modelStatusTone(status) {
+  if (["ready", "trained", "ok"].includes(status)) return "ok";
+  if (["training", "running", "pending"].includes(status)) return "warn";
+  if (["failed", "error"].includes(status)) return "bad";
+  return "warn";
+}
+
+function composeModelSnapshot() {
+  const current = state.modelStatus || {};
+  const latestRun = state.modelRuns[0]?.snapshot || {};
+  return {
+    ...latestRun,
+    ...current,
+    metrics: current.metrics || latestRun.metrics || null,
+    process: current.process || latestRun.process || null,
+    artifact_path: current.artifact_path || latestRun.artifact_path || null,
+  };
+}
+
+function renderMetricCards(items, emptyLabel) {
+  if (!items.length) return `<div class="model-empty">${escapeHtml(emptyLabel)}</div>`;
+  return `<div class="model-status-grid">${items.map((item) => `
+    <article class="model-stat-card">
+      <span>${escapeHtml(item.label)}</span>
+      <strong>${escapeHtml(item.value)}</strong>
+    </article>
+  `).join("")}</div>`;
+}
+
+function renderModelStatus() {
   const target = $("modelStatusPreview");
-  if (target) target.textContent = parts.join("\n\n");
+  if (!target) return;
+
+  const model = composeModelSnapshot();
+  const hasModel = Boolean(
+    (model?.status && model.status !== "idle") ||
+    model?.model_name ||
+    model?.model_version ||
+    model?.trained_at ||
+    model?.metrics ||
+    model?.process ||
+    model?.artifact_path,
+  );
+  if (!hasModel) {
+    target.innerHTML = `<div class="model-empty">${escapeHtml(state.modelStatusMessage || "Use as ações desta página para carregar informações do modelo.")}</div>`;
+    return;
+  }
+
+  const metrics = model.metrics || {};
+  const process = model.process || {};
+  const metricItems = [
+    { label: "Accuracy", value: metrics.accuracy == null ? null : formatPercentage(metrics.accuracy) },
+    { label: "Precision", value: metrics.precision == null ? null : formatPercentage(metrics.precision) },
+    { label: "Recall", value: metrics.recall == null ? null : formatPercentage(metrics.recall) },
+    { label: "F1 Score", value: metrics.f1_score == null ? null : formatPercentage(metrics.f1_score) },
+    { label: "ROC AUC", value: metrics.roc_auc == null ? null : formatPercentage(metrics.roc_auc) },
+  ].filter((item) => item.value !== null);
+
+  const processItems = [
+    { label: "Eventos", value: process.total_events == null ? null : formatCompactNumber(process.total_events) },
+    { label: "Usuários", value: process.unique_users == null ? null : formatCompactNumber(process.unique_users) },
+    { label: "Positivos", value: process.positive_events == null ? null : formatCompactNumber(process.positive_events) },
+    { label: "Duração", value: process.duration_ms == null ? "Não disponível" : formatDurationMs(process.duration_ms) },
+  ].filter((item) => item.value !== null);
+
+  const featureColumns = Array.isArray(process.feature_columns) ? process.feature_columns : [];
+  const benchmark = Array.isArray(process.benchmark) ? process.benchmark : [];
+
+  target.innerHTML = `
+    <div class="model-status-summary">
+      <div class="model-status-main">
+        <span class="pill ${modelStatusTone(model.status)}">${escapeHtml(friendlyModelStatus(model.status))}</span>
+        <div class="model-status-title">
+          <strong>${escapeHtml(model.model_name || "Modelo sem nome")}</strong>
+          <span>${escapeHtml(model.model_version || "Versão indisponível")} • ${escapeHtml(model.trained_at ? formatDateTime(model.trained_at) : "Sem data")}</span>
+        </div>
+      </div>
+      ${model.artifact_path ? `<div class="model-status-path">${escapeHtml(model.artifact_path)}</div>` : ""}
+    </div>
+    ${state.modelStatusMessage ? `<p class="model-note">${escapeHtml(state.modelStatusMessage)}</p>` : ""}
+    <div class="model-section metrics-section">
+      <p class="model-section-title">Métricas</p>
+      ${renderMetricCards(metricItems, "Sem métricas disponíveis.")}
+    </div>
+    <div class="model-section process-section">
+      <p class="model-section-title">Processo</p>
+      ${renderMetricCards(processItems, "Sem dados de processo disponíveis.")}
+    </div>
+    ${featureColumns.length ? `
+      <div class="model-section columns-section">
+        <p class="model-section-title">Colunas usadas</p>
+        <div class="model-feature-list">
+          ${featureColumns.map((column) => `<span class="pill">${escapeHtml(column)}</span>`).join("")}
+        </div>
+      </div>
+    ` : ""}
+    ${benchmark.length ? `
+      <div class="model-section benchmark-section">
+        <p class="model-section-title">Benchmark</p>
+        <div class="model-benchmark-list">
+          ${benchmark.slice(0, 4).map((entry) => `
+            <div class="model-benchmark-item">
+              <strong>${escapeHtml(entry.model_name || "Modelo")}</strong>
+              <span>${escapeHtml(entry.f1_score == null ? "-" : formatPercentage(entry.f1_score))}</span>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    ` : ""}
+  `;
+}
+
+function renderModelRuns() {
+  const target = $("modelRunsPreview");
+  if (!target) return;
+
+  const runs = Array.isArray(state.modelRuns) ? state.modelRuns : [];
+  if (!runs.length) {
+    target.innerHTML = `<div class="model-empty">O histórico aparece aqui após o primeiro carregamento.</div>`;
+    return;
+  }
+
+  target.innerHTML = runs.map((run) => {
+    const snapshot = run.snapshot || {};
+    const metrics = snapshot.metrics || {};
+    const process = snapshot.process || {};
+    const durationMs = run.duration_ms ?? process.duration_ms ?? null;
+    const metricText = [
+      metrics.accuracy == null ? null : `Accuracy ${formatPercentage(metrics.accuracy)}`,
+      metrics.f1_score == null ? null : `F1 ${formatPercentage(metrics.f1_score)}`,
+      metrics.roc_auc == null ? null : `ROC AUC ${formatPercentage(metrics.roc_auc)}`,
+    ].filter(Boolean).join(" • ");
+    const processText = [
+      process.total_events == null ? null : `${formatCompactNumber(process.total_events)} eventos`,
+      process.unique_users == null ? null : `${formatCompactNumber(process.unique_users)} usuários`,
+      process.positive_events == null ? null : `${formatCompactNumber(process.positive_events)} positivos`,
+      durationMs == null ? null : `Duração ${formatDurationMs(durationMs)}`,
+    ].filter(Boolean).join(" • ");
+
+    return `
+      <article class="model-run-item">
+        <div class="model-run-head">
+          <div class="model-run-title">
+            <strong>${escapeHtml(run.model_version || "Versão sem nome")}</strong>
+            <small>${escapeHtml(run.trained_at ? formatDateTime(run.trained_at) : "Sem data")}</small>
+          </div>
+          <span class="pill ${modelStatusTone(run.status)}">${escapeHtml(friendlyModelStatus(run.status))}</span>
+        </div>
+        ${metricText ? `<div class="model-run-line">${escapeHtml(metricText)}</div>` : ""}
+        ${processText ? `<div class="model-run-line">${escapeHtml(processText)}</div>` : `<div class="model-run-line">Duração não disponível</div>`}
+      </article>
+    `;
+  }).join("");
 }
 
 function formatLastSync(value) {
@@ -101,16 +320,16 @@ function formatLastSync(value) {
 function updateDashboardSummary() {
   setText("overviewFeatures", String(state.features.length));
   setText("overviewEvents", String(state.events.length));
-  setText("overviewModel", state.modelStatus?.status ? "Ativo" : "Sem dados");
-  setText("overviewLastSync", formatLastSync(state.lastSyncAt));
+  const modelState = state.modelStatus?.status || state.modelRuns[0]?.status;
+  setText("overviewModel", modelState && modelState !== "idle" ? "Ativo" : "Sem dados");
+  setText("overviewExperiments", String(state.experimentsCount || state.experiments.length || 0));
   setText("overviewSync", formatLastSync(state.lastSyncAt));
-  setText("insightLastSync", formatLastSync(state.lastSyncAt));
   const m = metricsFromEvaluations();
   setText("compareMl", String(m.ml));
   setText("compareRollout", String(m.rollout));
   setText("compareDelta", String(Math.abs(m.ml - m.rollout)));
   setText("mEvents", `${state.events.length} / ${state.features.length}`);
-  setText("insightLastSyncCard", formatLastSync(state.lastSyncAt));
+  renderDashboardTables();
 }
 
 function markDashboardSync() {
@@ -119,7 +338,7 @@ function markDashboardSync() {
 }
 
 function setPage(page, { fromHash = false } = {}) {
-  const next = ["dashboard", "insights", "features", "evaluation", "events", "governance"].includes(page) ? page : "dashboard";
+  const next = ["dashboard", "insights", "experiments", "features", "evaluation", "events", "governance"].includes(page) ? page : "dashboard";
   state.page = next;
   localStorage.setItem("adaptiveFlags.page", next);
 
@@ -133,8 +352,17 @@ function setPage(page, { fromHash = false } = {}) {
     btn.setAttribute("aria-current", active ? "page" : "false");
   });
 
-  if (!fromHash && window.location.hash && window.location.hash !== `#${next}`) {
-    history.replaceState(null, "", `#${next}`);
+  const desiredHash = `#${next}`;
+  if (!fromHash && window.location.hash !== desiredHash) {
+    window.location.hash = next;
+    return;
+  }
+
+  const target = document.getElementById(next);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
 
@@ -176,7 +404,7 @@ async function api(path, options = {}) {
 
 function normalizeNumber(value, fallback = null) {
   if (value === "" || value === null || value === undefined) return fallback;
-  const parsed = Number(value);
+  const parsed = Number(String(value).trim().replace(",", "."));
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
@@ -194,12 +422,46 @@ function statusLabel(value) {
 
 function decisionLabel(value) {
   const labels = {
+    fixed: "Manual",
+    match_rollout: "Acompanhar",
+    maximize_f1: "Automática",
     ml: "Inteligente",
     rollout: "Gradual",
     feature_disabled: "Regra pausada",
     feature_not_found: "Regra não encontrada",
+    continue: "Continuar",
+    stop_promote_b: "Promover B",
+    stop_keep_a: "Manter A",
   };
   return labels[value] || value || "-";
+}
+
+function experimentStatusLabel(value) {
+  return value ? '<span class="pill ok">Ativo</span>' : '<span class="pill bad">Pausado</span>';
+}
+
+function experimentDecisionTone(value) {
+  if (value === "stop_promote_b") return "ok";
+  if (value === "stop_keep_a") return "bad";
+  return "warn";
+}
+
+function experimentDecisionMessage(value, result) {
+  const stats = result?.variant_stats || {};
+  const samplesA = Number(stats.A?.samples || 0);
+  const samplesB = Number(stats.B?.samples || 0);
+  const minSamples = Number(result?.min_samples_per_variant || 0);
+
+  if (value === "stop_promote_b") {
+    return "A variante B está acima da A e já passou do mínimo para promoção.";
+  }
+  if (value === "stop_keep_a") {
+    return "A variante A continua melhor. Mantenha A como padrão.";
+  }
+  if (samplesA < minSamples || samplesB < minSamples) {
+    return "Ainda faltam amostras para decidir com segurança.";
+  }
+  return "Os dados ainda não mostraram uma diferença grande o bastante para encerrar o teste.";
 }
 
 function formatDateTime(value) {
@@ -243,23 +505,28 @@ function renderFeaturesTable() {
   const body = $("featuresBody");
   if (!body) return;
   const filter = state.featureFilter.trim().toLowerCase();
-  const filtered = filter
+  const filtered = [...(filter
     ? state.features.filter((feature) => {
       const haystack = `${feature.name ?? ""} ${feature.key ?? ""}`.toLowerCase();
       return haystack.includes(filter);
     })
-    : state.features;
+    : state.features)]
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
 
   $("featuresCount").textContent = `${filtered.length} linhas`;
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="5">Nenhuma regra encontrada.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6">Nenhuma regra encontrada.</td></tr>';
     return;
   }
 
   body.innerHTML = filtered.map((feature) => {
     const rollout = feature.rollout_percentage ?? "-";
-    return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rollout === "-" ? "-" : `${rollout}%`}</td>\n<td>${yesNo(feature.ml_enabled)}</td>\n<td>${statusLabel(feature.enabled)}</td>\n</tr>`;
+    const thresholdValue = feature.ml_threshold_value ?? "-";
+    const strategy = decisionLabel(feature.ml_threshold_mode);
+    const rolloutText = rollout === "-" ? "-" : `${rollout}%`;
+    const thresholdText = thresholdValue === "-" ? "-" : Number(thresholdValue).toFixed(2);
+    return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rolloutText}</td>\n<td><span class="strategy-chip strategy-${feature.ml_threshold_mode || "fixed"}">${strategy}</span></td>\n<td>${thresholdText}</td>\n<td>${statusLabel(feature.enabled)}</td>\n</tr>`;
   }).join("");
 }
 
@@ -272,8 +539,120 @@ function renderEvaluationTable() {
     : '<tr><td colspan="6">Nenhuma avaliação feita ainda.</td></tr>';
 }
 
+function renderDashboardTables() {
+  const featureFilter = state.featureFilter.trim().toLowerCase();
+  const filteredFeatures = featureFilter
+    ? state.features.filter((feature) => {
+      const haystack = `${feature.name ?? ""} ${feature.key ?? ""}`.toLowerCase();
+      return haystack.includes(featureFilter);
+    })
+    : state.features;
+
+  const featureEventCounts = new Map();
+  const featureEvalCounts = new Map();
+
+  for (const event of state.events) {
+    const key = event.feature_key || "-";
+    featureEventCounts.set(key, (featureEventCounts.get(key) || 0) + 1);
+  }
+
+  for (const evaluation of state.evaluations) {
+    const key = evaluation.feature_key || "-";
+    featureEvalCounts.set(key, (featureEvalCounts.get(key) || 0) + 1);
+  }
+
+  const dashboardFeaturesBody = $("dashboardFeaturesBody");
+  if (dashboardFeaturesBody) {
+    const attentionRows = filteredFeatures
+      .map((feature) => {
+        const key = feature.key || "-";
+        const eventCount = featureEventCounts.get(key) || 0;
+        const evalCount = featureEvalCounts.get(key) || 0;
+        const isAttention = !feature.enabled || eventCount === 0 || evalCount < 3 || Number(feature.rollout_percentage ?? 0) <= 10;
+        const severity = [
+          feature.enabled ? 0 : 3,
+          eventCount === 0 ? 2 : 0,
+          evalCount < 3 ? 1 : 0,
+          Number(feature.rollout_percentage ?? 0) <= 10 ? 1 : 0,
+        ].reduce((sum, value) => sum + value, 0);
+        return {
+          feature,
+          key,
+          eventCount,
+          evalCount,
+          isAttention,
+          severity,
+        };
+      })
+      .filter((row) => row.isAttention)
+      .sort((a, b) => b.severity - a.severity || String(a.feature.name ?? "").localeCompare(String(b.feature.name ?? "")))
+      .slice(0, 6);
+
+    dashboardFeaturesBody.innerHTML = attentionRows.length
+      ? attentionRows.map(({ feature, eventCount, evalCount }) => {
+        const rollout = feature.rollout_percentage ?? "-";
+        return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rollout === "-" ? "-" : `${rollout}%`}</td>\n<td>${yesNo(feature.ml_enabled)}</td>\n<td>${statusLabel(feature.enabled)}<div class="cell-subtle">${eventCount} eventos • ${evalCount} avaliações</div></td>\n</tr>`;
+      }).join("")
+      : '<tr><td colspan="5">Nenhuma regra pede atenção agora.</td></tr>';
+  }
+
+  const dashboardEvalBody = $("dashboardEvalBody");
+  if (dashboardEvalBody) {
+    const recentEvaluations = [...state.evaluations].slice(0, 5);
+    dashboardEvalBody.innerHTML = recentEvaluations.length
+      ? recentEvaluations.map((r) => `\n<tr>\n<td>${r.user_id}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${r.score ?? "-"}</td>\n<td>${r.threshold ?? "-"}</td>\n<td>${r.experiment?.variant ?? "-"}</td>\n</tr>`).join("")
+      : '<tr><td colspan="6">As avaliações aparecerão aqui após a primeira execução.</td></tr>';
+  }
+
+  const workloadBody = $("workloadBody");
+  if (workloadBody) {
+    const featureLastAction = new Map();
+
+    for (const event of state.events) {
+      const key = event.feature_key || "-";
+      const prev = featureLastAction.get(key);
+      if (!prev || String(event.timestamp) > String(prev)) {
+        featureLastAction.set(key, event.timestamp);
+      }
+    }
+
+    const rows = filteredFeatures
+      .map((feature) => {
+        const key = feature.key || "-";
+        const eventCount = featureEventCounts.get(key) || 0;
+        const evalCount = featureEvalCounts.get(key) || 0;
+        const rollout = feature.rollout_percentage ?? 0;
+        const status = feature.enabled ? '<span class="pill ok">Em uso</span>' : '<span class="pill bad">Sem uso</span>';
+        const lastAction = featureLastAction.get(key) || null;
+        return {
+          name: feature.name || "-",
+          key,
+          eventCount,
+          evalCount,
+          rollout,
+          status,
+          lastAction: lastAction ? formatDateTime(lastAction) : "-",
+        };
+      })
+      .sort((a, b) => b.eventCount - a.eventCount || b.evalCount - a.evalCount)
+      .slice(0, 6);
+
+    workloadBody.innerHTML = rows.length
+      ? rows.map((row) => `\n<tr>\n<td>${row.name}<div class="cell-subtle">${row.key}</div></td>\n<td>${row.eventCount}</td>\n<td>${row.evalCount}</td>\n<td>${row.rollout}%</td>\n<td>${row.status}</td>\n<td>${row.lastAction}</td>\n</tr>`).join("")
+      : '<tr><td colspan="6">Sem dados suficientes para montar a carga operacional.</td></tr>';
+  }
+}
+
 function renderEventsTable() {
-  const sorted = [...state.events].sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+  const filter = state.eventsFilter.trim().toLowerCase();
+  const filtered = filter
+    ? state.events.filter((e) => {
+      const haystack = `${e.user_id ?? ""} ${e.feature_key ?? ""} ${e.event_type ?? ""}`.toLowerCase();
+      return haystack.includes(filter);
+    })
+    : state.events;
+
+  const sorted = [...filtered].sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
   const perPage = Math.max(1, normalizeNumber($("eventsPerPage")?.value, 25) || 25);
   const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
   state.eventsPage = Math.min(Math.max(1, state.eventsPage), totalPages);
@@ -300,6 +679,195 @@ function renderEventsTable() {
   if (nextBtn) nextBtn.disabled = state.eventsPage >= totalPages;
 }
 
+function renderExperimentFeatureOptions() {
+  const select = $("experimentFeatureKey");
+  if (!select) return;
+
+  const current = select.value;
+  const features = Array.isArray(state.features) ? state.features : [];
+  if (!features.length) {
+    select.disabled = true;
+    select.innerHTML = '<option value="">Carregando regras...</option>';
+    return;
+  }
+
+  select.disabled = false;
+  select.innerHTML = [
+    '<option value="">Selecione uma regra</option>',
+    ...features.map((feature) => `<option value="${escapeHtml(feature.key || "")}">${escapeHtml(feature.name || feature.key || "-")} (${escapeHtml(feature.key || "-")})</option>`),
+  ].join("");
+
+  if (current && features.some((feature) => feature.key === current)) {
+    select.value = current;
+  }
+}
+
+function renderEventFeatureOptions() {
+  const select = $("eventFeatureKey");
+  if (!select) return;
+
+  const current = select.value || $("featureKey")?.value?.trim() || "";
+  const features = Array.isArray(state.features) ? state.features : [];
+  if (!features.length) {
+    select.disabled = true;
+    select.innerHTML = '<option value="">Carregue as regras para escolher uma</option>';
+    return;
+  }
+
+  select.disabled = false;
+  select.innerHTML = [
+    '<option value="">Selecione uma regra</option>',
+    ...features.map((feature) => `<option value="${escapeHtml(feature.key || "")}">${escapeHtml(feature.name || feature.key || "-")} (${escapeHtml(feature.key || "-")})</option>`),
+  ].join("");
+
+  if (current && features.some((feature) => feature.key === current)) {
+    select.value = current;
+  } else if (!select.value && features.length === 1) {
+    select.value = features[0].key || "";
+  }
+}
+
+function renderExperimentsTable() {
+  const body = $("experimentsBody");
+  if (!body) return;
+
+  const experiments = Array.isArray(state.experiments) ? state.experiments : [];
+  setText("experimentsCount", experiments.length === 1 ? "1 experimento" : `${experiments.length} experimentos`);
+
+  if (!experiments.length) {
+    body.innerHTML = '<tr><td colspan="6">Nenhum experimento cadastrado.</td></tr>';
+    renderExperimentResult();
+    return;
+  }
+
+  body.innerHTML = experiments.map((experiment) => {
+    const selected = Number(state.selectedExperimentId) === Number(experiment.id);
+    const minSamples = formatCompactNumber(experiment.min_samples_per_variant);
+    const minLift = formatPercentage(experiment.min_lift);
+    return `
+      <tr class="${selected ? "selected" : ""}">
+        <td>${escapeHtml(experiment.name || "-")}<div class="cell-subtle">${escapeHtml(formatDateTime(experiment.created_at))}</div></td>
+        <td>${escapeHtml(experiment.feature_key || "-")}</td>
+        <td>${escapeHtml(experiment.primary_metric_event || "-")}</td>
+        <td>${minSamples} amostras • ${minLift}</td>
+        <td>${experimentStatusLabel(experiment.enabled)}</td>
+        <td><button class="ghost table-action experiment-action" type="button" data-experiment-id="${escapeHtml(String(experiment.id))}">Ver resultado</button></td>
+      </tr>
+    `;
+  }).join("");
+
+  body.querySelectorAll(".experiment-action").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.dataset.experimentId);
+      if (!Number.isFinite(id)) return;
+      selectExperiment(id);
+    });
+  });
+
+  renderExperimentResult();
+}
+
+function renderExperimentResult() {
+  const target = $("experimentResultPreview");
+  if (!target) return;
+
+  const experiments = Array.isArray(state.experiments) ? state.experiments : [];
+  const selected = experiments.find((experiment) => Number(experiment.id) === Number(state.selectedExperimentId)) || null;
+  const result = state.experimentResult;
+
+  if (!selected || !result) {
+    target.innerHTML = `<div class="experiment-result-empty">${escapeHtml(state.experimentResultMessage || "Selecione um experimento para ver o resultado.")}</div>`;
+    return;
+  }
+
+  const variantA = result.variant_stats?.A || {};
+  const variantB = result.variant_stats?.B || {};
+  const samplesA = Number(variantA.samples || 0);
+  const samplesB = Number(variantB.samples || 0);
+  const positivesA = Number(variantA.positives || 0);
+  const positivesB = Number(variantB.positives || 0);
+  const rateA = samplesA ? positivesA / samplesA : 0;
+  const rateB = samplesB ? positivesB / samplesB : 0;
+  const lift = Number(result.lift_b_vs_a || 0);
+
+  target.innerHTML = `
+    <div class="experiment-result-summary">
+      <div class="experiment-result-main">
+        ${experimentStatusLabel(selected.enabled)}
+        <div class="experiment-result-title">
+          <strong>${escapeHtml(selected.name || "Experimento")}</strong>
+          <span>${escapeHtml(selected.feature_key || "-")} • ${escapeHtml(selected.primary_metric_event || "-")}</span>
+        </div>
+      </div>
+      <span class="pill ${experimentDecisionTone(result.decision)}">${escapeHtml(decisionLabel(result.decision))}</span>
+    </div>
+
+    <div class="experiment-result-grid">
+      <article class="experiment-stat-card">
+        <span>Taxa A</span>
+        <strong>${formatPercentage(rateA)}</strong>
+      </article>
+      <article class="experiment-stat-card">
+        <span>Taxa B</span>
+        <strong>${formatPercentage(rateB)}</strong>
+      </article>
+      <article class="experiment-stat-card">
+        <span>Lift</span>
+        <strong>${formatSignedPercentage(lift)}</strong>
+      </article>
+      <article class="experiment-stat-card">
+        <span>Diferença mínima</span>
+        <strong>${formatPercentage(result.min_lift)}</strong>
+      </article>
+    </div>
+
+    <div class="experiment-variant-grid">
+      <article class="experiment-variant-card">
+        <span>Variante A</span>
+        <strong>${formatCompactNumber(samplesA)} amostras</strong>
+        <p>${formatCompactNumber(positivesA)} positivas • taxa ${formatPercentage(rateA)}</p>
+      </article>
+      <article class="experiment-variant-card">
+        <span>Variante B</span>
+        <strong>${formatCompactNumber(samplesB)} amostras</strong>
+        <p>${formatCompactNumber(positivesB)} positivas • taxa ${formatPercentage(rateB)}</p>
+      </article>
+    </div>
+
+    <p class="experiment-result-note">${escapeHtml(experimentDecisionMessage(result.decision, result))} Mínimo de ${formatCompactNumber(result.min_samples_per_variant)} amostras por variante.</p>
+  `;
+}
+
+async function loadExperimentResult(experimentId, { silent = false } = {}) {
+  const selected = Number(experimentId);
+  if (!Number.isFinite(selected)) return;
+
+  state.selectedExperimentId = selected;
+  localStorage.setItem("adaptiveFlags.experimentId", String(selected));
+  state.experimentResult = null;
+  state.experimentResultMessage = "Carregando resultado...";
+  renderExperimentsTable();
+
+  const out = await api(`/experiments/${selected}/result`);
+  if (out.ok) {
+    state.experimentResult = out.data;
+    state.experimentResultMessage = "Resultado carregado.";
+    renderExperimentResult();
+    return;
+  }
+
+  state.experimentResult = null;
+  state.experimentResultMessage = `Não foi possível carregar o resultado (${out.status}).`;
+  renderExperimentResult();
+  if (!silent) {
+    setStatus(`Erro ao carregar resultado do experimento (${out.status})`, out.data);
+  }
+}
+
+async function selectExperiment(experimentId, { silent = false } = {}) {
+  await loadExperimentResult(experimentId, { silent });
+}
+
 function buildTimeline() {
   const bucket = {};
   for (const e of state.events) {
@@ -324,9 +892,15 @@ function drawCharts() {
     data: { labels: ["Liberados", "Bloqueados"], datasets: [{ data: [m.enabled, m.disabled], backgroundColor: [palette.green, palette.red], borderWidth: 0 }] },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      cutout: "62%",
-      plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8 } } },
+      maintainAspectRatio: false,
+      cutout: "68%",
+      layout: { padding: 0 },
+      plugins: {
+        legend: {
+          position: "right",
+          labels: { usePointStyle: true, boxWidth: 10, boxHeight: 10, font: { size: 12, weight: "600" } },
+        },
+      },
     },
   });
 
@@ -339,11 +913,12 @@ function drawCharts() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: false,
+      layout: { padding: 0 },
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(16,32,51,0.08)" } },
+        x: { grid: { display: false }, ticks: { font: { size: 12, weight: "500" } } },
+        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 12, weight: "500" } }, grid: { color: "rgba(16,32,51,0.08)" } },
       },
     },
   });
@@ -362,7 +937,7 @@ function drawCharts() {
       plugins: { legend: { display: false } },
       scales: {
         x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(16,32,51,0.08)" } },
+        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 12, weight: "500" } }, grid: { color: "rgba(16,32,51,0.08)" } },
       },
     },
   });
@@ -390,7 +965,7 @@ function featurePayload() {
     description: "Atualizada pela UI",
     enabled: $("enabled").checked,
     rollout_percentage: normalizeNumber($("rollout").value, 0),
-    ml_enabled: $("mlEnabled").checked,
+    ml_enabled: $("thresholdMode").value !== "fixed",
     ml_threshold_mode: $("thresholdMode").value,
     ml_threshold_value: normalizeNumber($("thresholdValue").value, 0.1),
   };
@@ -419,6 +994,9 @@ async function upsertFeature() {
       state.features = Array.isArray(refreshed.data) ? refreshed.data : state.features;
       updateMetricCards();
       renderFeaturesTable();
+      renderExperimentFeatureOptions();
+      renderEventFeatureOptions();
+      renderDashboardTables();
       markDashboardSync();
     }
 
@@ -433,6 +1011,9 @@ async function listFeatures(btnId = "loadFeaturesBtnFeature") {
     state.features = Array.isArray(out.data) ? out.data : [];
     updateMetricCards();
     renderFeaturesTable();
+    renderExperimentFeatureOptions();
+    renderEventFeatureOptions();
+    renderDashboardTables();
     markDashboardSync();
     setStatus(out.ok ? `Regras carregadas: ${state.features.length}` : `Erro ao carregar regras (${out.status})`, out.data);
   } finally { release(); }
@@ -456,6 +1037,24 @@ async function loadMetrics() {
   } finally { release(); }
 }
 
+async function loadEvaluations(limit = 1000) {
+  try {
+    const params = new URLSearchParams({ limit: String(limit) });
+    const out = await api(`/evaluations?${params.toString()}`);
+    state.evaluations = Array.isArray(out.data) ? out.data : [];
+    updateMetricCards();
+    renderEvaluationTable();
+    renderDashboardTables();
+    drawCharts();
+    if (out.ok) {
+      return;
+    }
+    setStatus(`Erro ao carregar avaliações (${out.status})`, out.data);
+  } catch (error) {
+    setStatus("Erro ao carregar avaliações.", String(error));
+  }
+}
+
 async function trainModel() {
   const release = setLoading("trainBtn", "Treinando...");
   try {
@@ -464,32 +1063,41 @@ async function trainModel() {
     setModelStatus(out.ok ? `Treino concluído em ${out.elapsed}ms` : `Erro no treino (${out.status})`, out.data);
     if (out.ok) {
       state.modelStatus = out.data;
+      await loadModelRuns(5, { silent: true });
       markDashboardSync();
+      updateDashboardSummary();
     }
   } finally { release(); }
 }
 
 async function loadModelStatus() {
-  const release = setLoading("modelStatusBtn", "Carregando...");
+  const release = () => {};
   try {
     const out = await api("/model/status");
     setStatus(out.ok ? "Status do modelo carregado" : `Erro ao carregar status do modelo (${out.status})`, out.data);
-    setModelStatus(out.ok ? "Status do modelo carregado" : `Erro ao carregar status do modelo (${out.status})`, out.data);
+    setModelStatus(out.ok ? "Modelo carregado." : `Erro ao carregar status do modelo (${out.status})`, out.data);
     if (out.ok) {
       state.modelStatus = out.data;
       markDashboardSync();
+      updateDashboardSummary();
     }
   } finally { release(); }
 }
 
-async function loadModelRuns() {
-  const release = setLoading("modelRunsBtn", "Carregando...");
+async function loadModelRuns(limit = 5, { silent = false } = {}) {
+  const release = () => {};
   try {
-    const out = await api("/model/runs?limit=10");
+    const out = await api(`/model/runs?limit=${limit}`);
     const runs = Array.isArray(out.data) ? out.data : Array.isArray(out.data?.runs) ? out.data.runs : [];
-    setStatus(out.ok ? `Histórico de treino carregado: ${runs.length}` : `Erro ao carregar histórico de treinos (${out.status})`, out.data);
-    setModelStatus(out.ok ? `Histórico de treino carregado: ${runs.length}` : `Erro ao carregar histórico de treinos (${out.status})`, out.data);
-    if (out.ok) markDashboardSync();
+    state.modelRuns = runs;
+    renderModelRuns();
+    renderModelStatus();
+    if (out.ok) {
+      markDashboardSync();
+      updateDashboardSummary();
+    } else {
+      setStatus(`Erro ao carregar histórico de treinos (${out.status})`, out.data);
+    }
   } finally { release(); }
 }
 
@@ -512,47 +1120,62 @@ async function evaluateUsers() {
       output.push(out.ok ? out.data : { user_id: userId, enabled: false, decision_source: `error_${out.status}` });
     }
 
-    state.evaluations = output;
     updateMetricCards();
     renderEvaluationTable();
     drawCharts();
     markDashboardSync();
+    renderDashboardTables();
     setStatus(`Avaliação concluída para ${users.length} usuários.`);
+    await loadEvaluations();
   } finally { release(); }
 }
 
-function clearEvaluations() {
-  state.evaluations = [];
-  updateMetricCards();
-  renderEvaluationTable();
-  drawCharts();
-  markDashboardSync();
-  setStatus("Avaliações limpas.");
+async function clearEvaluations() {
+  const release = setLoading("clearEvaluationsBtn", "Limpando...");
+  try {
+    const out = await api("/evaluations", { method: "DELETE" });
+    if (out.ok) {
+      state.evaluations = [];
+      updateMetricCards();
+      renderEvaluationTable();
+      drawCharts();
+      markDashboardSync();
+      renderDashboardTables();
+      setStatus("Avaliações limpas.");
+      await loadEvaluations();
+      return;
+    }
+    setStatus(`Erro ao limpar avaliações (${out.status})`, out.data);
+  } finally {
+    release();
+  }
 }
 
 function operationalMetrics() {
   const out = {};
   const latency = normalizeNumber($("latencyMs").value);
   const errorRate = normalizeNumber($("errorRate").value);
-  const cpu = normalizeNumber($("cpuPct").value);
-  const mem = normalizeNumber($("memPct").value);
   if (latency !== null) out.latency_ms = latency;
   if (errorRate !== null) out.error_rate = errorRate;
-  if (cpu !== null) out.cpu_pct = cpu;
-  if (mem !== null) out.mem_pct = mem;
   return out;
 }
 
-async function sendEvent(single = true) {
-  const btn = single ? "sendEventBtn" : "sendIngestBtn";
-  const release = setLoading(btn, "Enviando...");
+function ingestCount() {
+  const raw = normalizeNumber($("ingestCount").value, 1);
+  const count = Number.isFinite(raw) ? Math.floor(raw) : 1;
+  return Math.max(1, Math.min(5000, count));
+}
+
+async function sendEvent() {
+  const batchCount = ingestCount();
+  const release = setLoading("sendEventBtn", batchCount > 1 ? "Enviando lote..." : "Enviando...");
   try {
-    const featureKey = $("featureKey").value.trim();
+    const featureKey = $("eventFeatureKey").value.trim();
     const userId = $("eventUserId").value.trim();
     const eventType = $("eventType").value.trim();
     const source = $("eventSource").value.trim() || "ui_manual";
     if (!featureKey || !userId || !eventType) {
-      setStatus("Preencha regra, usuário e tipo de atividade.");
+      setStatus("Selecione a regra, informe o usuário e o tipo de atividade.");
       return;
     }
 
@@ -564,27 +1187,34 @@ async function sendEvent(single = true) {
       properties: operationalMetrics(),
     };
 
-    const out = single
+    const out = batchCount === 1
       ? await api("/events", { method: "POST", body: JSON.stringify({ ...baseEvent, source }) })
-      : await api("/ingest/events", { method: "POST", body: JSON.stringify({ source, events: [baseEvent] }) });
+      : await api("/ingest/events", {
+        method: "POST",
+        body: JSON.stringify({
+          source,
+          events: Array.from({ length: batchCount }, (_, index) => ({
+            ...baseEvent,
+            timestamp: new Date(Date.now() + index).toISOString(),
+          })),
+        }),
+      });
 
-    setStatus(out.ok ? (single ? "Atividade registrada." : "Atividades registradas em lote.") : `Erro ao registrar atividade (${out.status})`, out.data);
-    if (out.ok) markDashboardSync();
+    setStatus(
+      out.ok ? (batchCount === 1 ? "Atividade registrada." : `Atividades registradas em lote: ${batchCount}.`) : `Erro ao registrar atividade (${out.status})`,
+      out.data,
+    );
+    if (out.ok) {
+      await loadEventsFromDb("loadEventsBtn");
+      return;
+    }
   } finally { release(); }
 }
 
 async function loadEventsFromDb(btnId = "loadEventsBtn") {
   const release = setLoading(btnId, "Carregando...");
   try {
-    const params = new URLSearchParams();
-    const user = $("filterUserId").value.trim();
-    const feature = $("filterFeatureKey").value.trim();
-    const type = $("filterEventType").value.trim();
-    if (user) params.set("user_id", user);
-    if (feature) params.set("feature_key", feature);
-    if (type) params.set("event_type", type);
-
-    const out = await api(params.toString() ? `/events?${params.toString()}` : "/events");
+    const out = await api("/events");
     if (!out.ok || !Array.isArray(out.data)) {
       setStatus(`Erro ao carregar eventos (${out.status})`, out.data);
       return;
@@ -596,19 +1226,73 @@ async function loadEventsFromDb(btnId = "loadEventsBtn") {
     updateMetricCards();
     drawCharts();
     markDashboardSync();
+    renderDashboardTables();
     setStatus(`Eventos carregados: ${state.events.length}`);
   } finally { release(); }
 }
 
 async function loadExperiments() {
-  const release = setLoading("loadExperimentsBtn", "Carregando...");
+  const release = () => {};
   try {
     const out = await api("/experiments");
     state.experiments = Array.isArray(out.data) ? out.data : [];
     state.experimentsCount = state.experiments.length;
     updateDashboardSummary();
+    renderExperimentsTable();
     if (out.ok) markDashboardSync();
+    renderDashboardTables();
+    const selected = state.experiments.find((experiment) => Number(experiment.id) === Number(state.selectedExperimentId)) || state.experiments[0] || null;
+    if (selected) {
+      state.selectedExperimentId = selected.id;
+      localStorage.setItem("adaptiveFlags.experimentId", String(selected.id));
+      await loadExperimentResult(selected.id, { silent: true });
+    } else {
+      state.experimentResult = null;
+      state.experimentResultMessage = "Nenhum experimento cadastrado ainda.";
+      renderExperimentResult();
+    }
     setStatus(out.ok ? `Experimentos carregados: ${state.experiments.length}` : `Erro ao carregar experimentos (${out.status})`, out.data);
+  } finally { release(); }
+}
+
+function experimentPayload() {
+  const minSamples = Math.max(1, Math.floor(normalizeNumber($("experimentMinSamples").value, 100) || 100));
+  const minLift = normalizeNumber($("experimentMinLift").value, 0.02);
+  return {
+    name: $("experimentName").value.trim(),
+    feature_key: $("experimentFeatureKey").value.trim(),
+    primary_metric_event: $("experimentMetricEvent").value.trim(),
+    min_samples_per_variant: minSamples,
+    min_lift: Number.isFinite(minLift) ? minLift : 0.02,
+    enabled: $("experimentEnabled").checked,
+  };
+}
+
+async function createExperiment() {
+  const release = setLoading("createExperimentBtn", "Criando...");
+  try {
+    const payload = experimentPayload();
+    if (!payload.name || !payload.feature_key || !payload.primary_metric_event) {
+      setStatus("Informe nome, regra e métrica principal do experimento.");
+      return;
+    }
+
+    const out = await api("/experiments", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!out.ok) {
+      setStatus(`Erro ao criar experimento (${out.status})`, out.data);
+      return;
+    }
+
+    setStatus(`Experimento criado em ${out.elapsed}ms.`, out.data);
+    if (out.data?.id) {
+      state.selectedExperimentId = out.data.id;
+      localStorage.setItem("adaptiveFlags.experimentId", String(out.data.id));
+    }
+    await loadExperiments();
   } finally { release(); }
 }
 
@@ -624,16 +1308,11 @@ function bind() {
   on("healthBtn", runHealth);
   on("metricsBtn", loadMetrics);
   on("upsertFeatureBtn", upsertFeature);
-  on("loadFeaturesBtnFeature", () => listFeatures("loadFeaturesBtnFeature"));
+  on("createExperimentBtn", createExperiment);
   on("trainBtn", trainModel);
-  on("modelStatusBtn", loadModelStatus);
-  on("modelRunsBtn", loadModelRuns);
   on("simulateBtn", evaluateUsers);
   on("clearEvaluationsBtn", clearEvaluations);
-  on("sendEventBtn", () => sendEvent(true));
-  on("sendIngestBtn", () => sendEvent(false));
-  on("loadEventsBtn", loadEventsFromDb);
-  on("loadExperimentsBtn", loadExperiments);
+  on("sendEventBtn", sendEvent);
   on("eventsPrevBtn", () => {
     state.eventsPage = Math.max(1, state.eventsPage - 1);
     renderEventsTable();
@@ -658,7 +1337,7 @@ function bind() {
     const payload = $("apiStatusPayload");
     const history = $("statusHistory");
     if (summary) summary.textContent = "Pronto.";
-    if (meta) meta.textContent = "Aguardando ação.";
+    if (meta) meta.textContent = "Sem atividade recente.";
     if (payload) payload.textContent = "Nenhum detalhe disponível.";
     if (history) history.innerHTML = "";
   });
@@ -667,6 +1346,15 @@ function bind() {
     featureFilter.addEventListener("input", () => {
       state.featureFilter = featureFilter.value;
       renderFeaturesTable();
+      renderDashboardTables();
+    });
+  }
+  const eventsFilter = $("eventsFilter");
+  if (eventsFilter) {
+    eventsFilter.addEventListener("input", () => {
+      state.eventsFilter = eventsFilter.value;
+      state.eventsPage = 1;
+      renderEventsTable();
     });
   }
   const eventsPerPage = $("eventsPerPage");
@@ -679,7 +1367,7 @@ function bind() {
   document.querySelectorAll(".nav-item[data-page]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const next = btn.dataset.page;
-      requestAnimationFrame(() => setPage(next, { fromHash: true }));
+      requestAnimationFrame(() => setPage(next));
     });
   });
   window.addEventListener("hashchange", () => setPage(window.location.hash.replace(/^#/, ""), { fromHash: true }));
@@ -705,13 +1393,21 @@ function init() {
   renderFeaturesTable();
   renderEvaluationTable();
   renderEventsTable();
+  renderExperimentFeatureOptions();
+  renderEventFeatureOptions();
+  renderExperimentsTable();
+  renderModelStatus();
+  renderModelRuns();
+  drawCharts();
   if (typeof Chart === "undefined") {
     setStatus("Os gráficos não carregaram, mas o restante do painel continua disponível.");
   }
   Promise.allSettled([
     listFeatures("loadFeaturesBtnFeature"),
     loadEventsFromDb("loadEventsBtn"),
+    loadEvaluations(),
     loadModelStatus(),
+    loadModelRuns(5, { silent: true }),
     loadExperiments(),
   ]).finally(() => drawCharts());
 }
