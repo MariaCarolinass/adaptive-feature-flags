@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -39,6 +41,33 @@ class EvaluateResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "feature_key": "item_355908",
+                "user_id": "257597",
+                "enabled": True,
+                "decision_source": "ml",
+                "score": 0.81,
+                "threshold": 0.2,
+                "threshold_mode": "fixed",
+                "experiment": {
+                    "experiment_id": 1,
+                    "experiment_name": "Checkout CTA A/B",
+                    "variant": "B"
+                },
+                "model_version": "v1",
+            }
+        }
+    )
+
+
+class EvaluationHistoryItem(EvaluateResponse):
+    id: int
+    created_at: datetime
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": 12,
+                "created_at": "2026-06-04T14:19:00+00:00",
                 "feature_key": "item_355908",
                 "user_id": "257597",
                 "enabled": True,
