@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from app.core.event_types import POSITIVE_EVENT_TYPES
 from app.core.exceptions import ValidationError
@@ -29,9 +30,10 @@ class TrainingService:
         total_events = len(events)
         unique_users = len({event.user_id for event in events})
         positive_events = sum(1 for event in events if event.event_type in POSITIVE_EVENT_TYPES)
+        model_version = self._next_model_version()
 
         try:
-            result = train_from_events(events)
+            result = train_from_events(events, model_version=model_version)
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
 
@@ -45,6 +47,7 @@ class TrainingService:
         )
 
         saved = self.model_repository.save_status(metadata)
+        duration_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
         snapshot = {
             "model_name": saved.model_name,
             "model_version": saved.model_version,
@@ -55,6 +58,7 @@ class TrainingService:
                 "total_events": total_events,
                 "unique_users": unique_users,
                 "positive_events": positive_events,
+                "duration_ms": duration_ms,
                 "feature_columns": result.get("feature_columns", []),
                 "benchmark": result.get("benchmark", []),
                 "dataset_profile": result.get("dataset_profile", {}),
@@ -68,9 +72,9 @@ class TrainingService:
             model_version=saved.model_version or "unknown",
             trained_at=saved.trained_at or started_at,
             status=saved.status,
+            duration_ms=duration_ms,
             snapshot=snapshot,
         )
-        duration_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
         self.metrics.timing("training.duration_ms", duration_ms)
         if saved.metrics:
             accuracy = saved.metrics.get("accuracy")
@@ -103,3 +107,15 @@ class TrainingService:
 
     def list_training_runs(self, limit: int = 20) -> list[dict]:
         return self.model_repository.list_training_runs(limit=limit)
+
+    def _next_model_version(self) -> str:
+        runs = self.model_repository.list_training_runs(limit=1)
+        latest_version = runs[0].get("model_version") if runs else None
+        if not latest_version:
+            return "v1"
+
+        match = re.fullmatch(r"v(\d+)", str(latest_version).strip())
+        if not match:
+            return "v1"
+
+        return f"v{int(match.group(1)) + 1}"
