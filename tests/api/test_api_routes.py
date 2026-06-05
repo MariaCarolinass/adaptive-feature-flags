@@ -43,6 +43,44 @@ def test_error_response_does_not_leak_internal_details(monkeypatch) -> None:
         assert response.json() == {"detail": "Internal server error."}
 
 
+def test_evaluations_endpoint_lists_backend_history(monkeypatch) -> None:
+    from app.api.v1.routes import evaluations as evaluations_route
+
+    class _Service:
+        def list_recent(self, limit: int = 1000):
+            return [
+                {
+                    "id": 1,
+                    "created_at": "2026-06-04T14:19:00+00:00",
+                    "feature_key": "new_checkout",
+                    "user_id": "u1",
+                    "enabled": True,
+                    "decision_source": "ml",
+                    "score": 0.91,
+                    "threshold": 0.2,
+                    "threshold_mode": "fixed",
+                    "experiment": None,
+                    "model_version": "v1",
+                }
+            ]
+
+        def clear_history(self) -> int:
+            return 1
+
+    monkeypatch.setattr(evaluations_route, "evaluation_service", _Service())
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.get("/evaluations")
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload) == 1
+        assert payload[0]["user_id"] == "u1"
+
+        cleared = client.delete("/evaluations")
+        assert cleared.status_code == 200
+        assert cleared.json() == {"deleted": 1}
+
+
 def test_security_headers_present() -> None:
     with TestClient(app, base_url="http://localhost") as client:
         response = client.get("/health")
