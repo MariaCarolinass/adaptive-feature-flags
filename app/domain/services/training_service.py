@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import inspect
 import re
 
 from app.core.event_types import POSITIVE_EVENT_TYPES
@@ -33,7 +34,7 @@ class TrainingService:
         model_version = self._next_model_version()
 
         try:
-            result = train_from_events(events, model_version=model_version)
+            result = self._train_from_events(events, model_version=model_version)
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
 
@@ -68,7 +69,7 @@ class TrainingService:
                 "fallback_policy": "rollout_deterministic",
             },
         }
-        self.model_repository.append_training_run(
+        self._append_training_run(
             model_version=saved.model_version or "unknown",
             trained_at=saved.trained_at or started_at,
             status=saved.status,
@@ -107,6 +108,31 @@ class TrainingService:
 
     def list_training_runs(self, limit: int = 20) -> list[dict]:
         return self.model_repository.list_training_runs(limit=limit)
+
+    @staticmethod
+    def _train_from_events(events, *, model_version: str) -> dict:
+        signature = inspect.signature(train_from_events)
+        if "model_version" in signature.parameters:
+            return train_from_events(events, model_version=model_version)
+        return train_from_events(events)
+
+    def _append_training_run(self, *, model_version: str, trained_at, status: str, duration_ms: int, snapshot: dict) -> None:
+        signature = inspect.signature(self.model_repository.append_training_run)
+        if "duration_ms" in signature.parameters:
+            self.model_repository.append_training_run(
+                model_version=model_version,
+                trained_at=trained_at,
+                status=status,
+                duration_ms=duration_ms,
+                snapshot=snapshot,
+            )
+            return
+        self.model_repository.append_training_run(
+            model_version=model_version,
+            trained_at=trained_at,
+            status=status,
+            snapshot=snapshot,
+        )
 
     def _next_model_version(self) -> str:
         runs = self.model_repository.list_training_runs(limit=1)
