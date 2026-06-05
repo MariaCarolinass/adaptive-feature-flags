@@ -26,6 +26,7 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
     _apply_sqlite_feature_threshold_migration()
+    _apply_sqlite_model_training_run_migration()
 
 
 def _apply_sqlite_feature_threshold_migration() -> None:
@@ -44,4 +45,19 @@ def _apply_sqlite_feature_threshold_migration() -> None:
         if "ml_threshold_value" not in columns:
             conn.exec_driver_sql(
                 "ALTER TABLE features ADD COLUMN ml_threshold_value FLOAT NOT NULL DEFAULT 0.1"
+            )
+
+
+def _apply_sqlite_model_training_run_migration() -> None:
+    if not str(engine.url).startswith("sqlite:"):
+        return
+
+    with engine.begin() as conn:
+        columns = {
+            row[1]
+            for row in conn.exec_driver_sql("PRAGMA table_info(model_training_runs)").fetchall()
+        }
+        if "duration_ms" not in columns:
+            conn.exec_driver_sql(
+                "ALTER TABLE model_training_runs ADD COLUMN duration_ms INTEGER"
             )
