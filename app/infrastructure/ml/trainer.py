@@ -28,7 +28,7 @@ MODEL_FEATURE_COLUMNS = [
 ]
 
 
-def train_from_events(events: list[Any]) -> dict[str, Any]:
+def train_from_events(events: list[Any], model_version: str = "v1") -> dict[str, Any]:
     rows = []
     for event in events:
         rows.append(
@@ -102,7 +102,6 @@ def train_from_events(events: list[Any]) -> dict[str, Any]:
         "class_distribution": {str(k): int(v) for k, v in class_distribution.items()},
     }
 
-    model_version = "v1"
     serializer = ModelSerializer()
     artifact_path = serializer.save(
         model=best_model,
