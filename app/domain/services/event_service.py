@@ -3,11 +3,17 @@ from datetime import datetime
 from app.core.exceptions import NotFoundError
 from app.domain.entities.event import Event
 from app.domain.repositories.event_repository import EventRepository
+from app.domain.services.experiment_service import ExperimentService
 
 
 class EventService:
-    def __init__(self, event_repository: EventRepository) -> None:
+    def __init__(
+        self,
+        event_repository: EventRepository,
+        experiment_service: ExperimentService | None = None,
+    ) -> None:
         self.event_repository = event_repository
+        self.experiment_service = experiment_service
 
     def create_event(
         self,
@@ -23,6 +29,16 @@ class EventService:
             merged_properties["source"] = source
         elif "source" in merged_properties and merged_properties["source"] is not None:
             source = str(merged_properties["source"])
+
+        if self.experiment_service is not None:
+            context = self.experiment_service.maybe_build_context(
+                feature_key=feature_key,
+                user_id=user_id,
+            )
+            if context is not None:
+                merged_properties["ab_variant"] = context["variant"]
+                merged_properties["experiment_id"] = context["experiment_id"]
+                merged_properties["experiment_name"] = context["experiment_name"]
 
         event = Event(
             id=None,
@@ -69,6 +85,16 @@ class EventService:
             merged_properties["source"] = source
         elif "source" in merged_properties and merged_properties["source"] is not None:
             source = str(merged_properties["source"])
+
+        if self.experiment_service is not None:
+            context = self.experiment_service.maybe_build_context(
+                feature_key=feature_key,
+                user_id=user_id,
+            )
+            if context is not None:
+                merged_properties["ab_variant"] = context["variant"]
+                merged_properties["experiment_id"] = context["experiment_id"]
+                merged_properties["experiment_name"] = context["experiment_name"]
 
         updated = Event(
             id=existing.id,
