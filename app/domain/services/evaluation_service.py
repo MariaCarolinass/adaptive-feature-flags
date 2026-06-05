@@ -1,8 +1,11 @@
 import hashlib
+from datetime import datetime, timezone
 
 import pandas as pd
 from app.core.logging import get_logger
+from app.domain.entities.evaluation import EvaluationRecord
 from app.domain.repositories.event_repository import EventRepository
+from app.domain.repositories.evaluation_repository import EvaluationRepository
 from app.domain.repositories.feature_repository import FeatureRepository
 from app.domain.repositories.model_repository import ModelRepository
 from app.domain.services.experiment_service import ExperimentService
@@ -30,12 +33,14 @@ class EvaluationService:
         event_repository: EventRepository,
         model_repository: ModelRepository,
         experiment_service: ExperimentService,
+        evaluation_repository: EvaluationRepository | None = None,
         metrics: MetricsSink | None = None,
     ) -> None:
         self.feature_repository = feature_repository
         self.event_repository = event_repository
         self.model_repository = model_repository
         self.experiment_service = experiment_service
+        self.evaluation_repository = evaluation_repository
         self.metrics = metrics or NoopMetricsSink()
 
     def _stable_percentage(self, user_id: str, feature_key: str) -> int:
@@ -53,7 +58,7 @@ class EvaluationService:
                 "evaluation.decision_source",
                 tags={"source": "feature_not_found"},
             )
-            return {
+            result = {
                 "feature_key": feature_key,
                 "user_id": user["user_id"],
                 "enabled": False,
@@ -61,13 +66,15 @@ class EvaluationService:
                 "score": None,
                 "model_version": None,
             }
+            self._persist(result)
+            return result
 
         if not feature.enabled:
             self.metrics.increment(
                 "evaluation.decision_source",
                 tags={"source": "feature_disabled"},
             )
-            return {
+            result = {
                 "feature_key": feature_key,
                 "user_id": user["user_id"],
                 "enabled": False,
@@ -75,6 +82,8 @@ class EvaluationService:
                 "score": None,
                 "model_version": None,
             }
+            self._persist(result)
+            return result
 
         model_status = self.model_repository.get_status()
         experiment = self.experiment_service.maybe_build_context(
@@ -102,7 +111,7 @@ class EvaluationService:
                 )
                 if enabled:
                     self.metrics.increment("evaluation.enabled.count")
-                return {
+                result = {
                     "feature_key": feature_key,
                     "user_id": user["user_id"],
                     "enabled": enabled,
@@ -113,6 +122,8 @@ class EvaluationService:
                     "experiment": experiment,
                     "model_version": model_status.model_version,
                 }
+                self._persist(result)
+                return result
 
         bucket = self._stable_percentage(user["user_id"], feature_key)
         enabled = bucket < feature.rollout_percentage
@@ -123,7 +134,7 @@ class EvaluationService:
         if enabled:
             self.metrics.increment("evaluation.enabled.count")
 
-        return {
+        result = {
             "feature_key": feature_key,
             "user_id": user["user_id"],
             "enabled": enabled,
@@ -134,6 +145,18 @@ class EvaluationService:
             "experiment": experiment,
             "model_version": None,
         }
+        self._persist(result)
+        return result
+
+    def list_recent(self, limit: int = 50) -> list[dict]:
+        if self.evaluation_repository is None:
+            return []
+        return [self._to_payload(record) for record in self.evaluation_repository.list(limit=limit)]
+
+    def clear_history(self) -> int:
+        if self.evaluation_repository is None:
+            return 0
+        return self.evaluation_repository.delete_all()
 
     @staticmethod
     def _resolve_ml_threshold(
@@ -204,3 +227,43 @@ class EvaluationService:
                 artifact_path,
             )
             return None
+
+    def _persist(self, result: dict) -> None:
+        if self.evaluation_repository is None:
+            return
+        try:
+            created_at = datetime.now(timezone.utc)
+            record = EvaluationRecord(
+                id=None,
+                feature_key=result["feature_key"],
+                user_id=result["user_id"],
+                enabled=bool(result["enabled"]),
+                decision_source=str(result["decision_source"]),
+                score=result.get("score"),
+                threshold=result.get("threshold"),
+                threshold_mode=result.get("threshold_mode"),
+                experiment=result.get("experiment"),
+                model_version=result.get("model_version"),
+                created_at=created_at,
+            )
+            saved = self.evaluation_repository.create(record)
+            result["id"] = saved.id
+            result["created_at"] = saved.created_at.isoformat()
+        except Exception:
+            logger.warning("Failed to persist evaluation history for feature_key=%s", result.get("feature_key"))
+
+    @staticmethod
+    def _to_payload(record: EvaluationRecord) -> dict:
+        return {
+            "id": record.id,
+            "feature_key": record.feature_key,
+            "user_id": record.user_id,
+            "enabled": record.enabled,
+            "decision_source": record.decision_source,
+            "score": record.score,
+            "threshold": record.threshold,
+            "threshold_mode": record.threshold_mode,
+            "experiment": record.experiment,
+            "model_version": record.model_version,
+            "created_at": record.created_at.isoformat(),
+        }
