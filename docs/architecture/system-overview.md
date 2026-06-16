@@ -17,6 +17,7 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 - Repositórios SQLite (`app/infrastructure/repositories`).
 - Pipeline de machine learning (`app/infrastructure/ml`).
 - Ingestão de dados (`app/api/v1/routes/ingest.py`).
+- Esquema físico do banco: `database-schema.md`
 
 ## Fluxo de alto nível
 
