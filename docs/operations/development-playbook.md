@@ -24,6 +24,12 @@ uvicorn app.main:app --reload
 
 Uso: popular ambiente local rapidamente com dados sintéticos.
 
+Sem argumentos, o script importa todos os catálogos JSON do diretório [`dataset/`](../../dataset/) para manter os dados fora do código.
+Também aceita `--catalog` para apontar um JSON específico quando você quiser importar só um catálogo.
+Catálogos prontos: [`dataset/seed_demo_checkout_focus.json`](../../dataset/seed_demo_checkout_focus.json), [`dataset/seed_demo_growth_focus.json`](../../dataset/seed_demo_growth_focus.json), [`dataset/seed_demo_activation_focus.json`](../../dataset/seed_demo_activation_focus.json), [`dataset/seed_demo_retention_focus.json`](../../dataset/seed_demo_retention_focus.json) e [`dataset/seed_demo_auth_focus.json`](../../dataset/seed_demo_auth_focus.json).
+Os catálogos usam eventos específicos do contexto, por exemplo `checkout_upsell_shown`, `checkout_upsell_clicked`, `purchase_completed`, `onboarding_step_shown`, `onboarding_completed` e `weekly_digest_opened`.
+Esses eventos seguem a taxonomia descrita em [`docs/implementation/ml-decision-flow-in-depth.md`](../implementation/ml-decision-flow-in-depth.md), onde `VIEW_EVENT_TYPES`, `INTERMEDIATE_POSITIVE_EVENT_TYPES`, `TERMINAL_POSITIVE_EVENT_TYPES` e `POSITIVE_EVENT_TYPES` são explicados no contexto do treino e da decisão online.
+
 Comando:
 
 ```bash
@@ -32,20 +38,23 @@ python3 scripts/seed_demo.py
 
 Efeito:
 
-- cria features demo (se não existirem);
-- cria eventos sintéticos com `source=seed_demo`;
+- sincroniza as features demo com o catálogo esperado;
+- gera 50 usuários sintéticos por catálogo;
+- cria eventos sintéticos correlacionados por usuário e por jornada;
+- distribui os eventos ao longo de vários dias para deixar o dashboard mais crível;
 - é idempotente (evita duplicação equivalente).
 
 ### `scripts/import_events_csv.py`
 
 Uso: importar eventos de CSV para o schema canônico de eventos.
+O projeto pode ser testado com qualquer arquivo CSV compatível: no modo `generic`, basta mapear as colunas canônicas; no modo `ecommerce_dataset`, o CSV precisa seguir o contrato do dataset e-commerce.
 
 Comando (dataset e-commerce):
 
 ```bash
 python3 scripts/import_events_csv.py \
   --adapter ecommerce_dataset \
-  --csv dataset/events.csv \
+  --csv ./seu_arquivo.csv \
   --feature-key-mode item \
   --limit 10000
 ```
@@ -55,7 +64,7 @@ Comando (CSV customizado):
 ```bash
 python3 scripts/import_events_csv.py \
   --adapter generic \
-  --csv ./events.csv \
+  --csv ./seu_arquivo.csv \
   --source web_app \
   --mapping-json '{"user_id":"uid","feature_key":"feature","event_type":"event_name","timestamp":"ts"}'
 ```
