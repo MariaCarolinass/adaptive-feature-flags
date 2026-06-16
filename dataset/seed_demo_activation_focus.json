@@ -1,0 +1,132 @@
+{
+  "seed_source": "seed_demo",
+  "seed_version": "activation_focus_v1",
+  "user_prefix": "activation_user",
+  "seed_anchor": "2026-06-07T09:00:00Z",
+  "seed_window_days": 10,
+  "random_seed": 123,
+  "features": [
+    {
+      "name": "Guided Onboarding",
+      "key": "guided_onboarding",
+      "description": "Checklist guiado para acelerar o primeiro uso da plataforma.",
+      "enabled": true,
+      "rollout_percentage": 65,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.25
+    },
+    {
+      "name": "Empty State Nudge",
+      "key": "empty_state_nudge",
+      "description": "Sugestão contextual quando o usuário ainda não tem dados carregados.",
+      "enabled": true,
+      "rollout_percentage": 55,
+      "ml_enabled": true,
+      "ml_threshold_mode": "maximize_f1",
+      "ml_threshold_value": 0.2
+    },
+    {
+      "name": "Profile Setup Prompt",
+      "key": "profile_setup_prompt",
+      "description": "Chamada para completar o perfil e melhorar a personalização.",
+      "enabled": true,
+      "rollout_percentage": 40,
+      "ml_enabled": true,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.18
+    },
+    {
+      "name": "First Success Tip",
+      "key": "first_success_tip",
+      "description": "Dica contextual que aparece após a primeira ação bem-sucedida.",
+      "enabled": true,
+      "rollout_percentage": 35,
+      "ml_enabled": false,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.1
+    }
+  ],
+  "profiles": [
+    {
+      "segment": "new_user",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.34,
+      "primary_features": ["guided_onboarding", "empty_state_nudge"],
+      "secondary_features": ["profile_setup_prompt"],
+      "active_days_min": 1,
+      "active_days_max": 3,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [9, 12, 18]
+    },
+    {
+      "segment": "trial_user",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.58,
+      "primary_features": ["profile_setup_prompt", "guided_onboarding"],
+      "secondary_features": ["first_success_tip", "empty_state_nudge"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [10, 14, 20]
+    },
+    {
+      "segment": "mobile_early_adopter",
+      "source": "mobile_app",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.5,
+      "primary_features": ["empty_state_nudge", "first_success_tip"],
+      "secondary_features": ["guided_onboarding", "profile_setup_prompt"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [8, 13, 19]
+    }
+  ],
+  "journeys": {
+    "guided_onboarding": {
+      "page": "onboarding",
+      "surface": "setup checklist",
+      "journey": "activation",
+      "exposure_event": "onboarding_step_shown",
+      "positive_event": "onboarding_completed",
+      "positive_stage": "activation",
+      "secondary_feature": "profile_setup_prompt"
+    },
+    "empty_state_nudge": {
+      "page": "dashboard",
+      "surface": "empty state",
+      "journey": "activation",
+      "exposure_event": "empty_state_shown",
+      "positive_event": "first_task_created",
+      "positive_stage": "activation",
+      "secondary_feature": "guided_onboarding"
+    },
+    "profile_setup_prompt": {
+      "page": "profile",
+      "surface": "profile prompt",
+      "journey": "activation",
+      "exposure_event": "profile_setup_shown",
+      "positive_event": "profile_completed",
+      "positive_stage": "setup",
+      "secondary_feature": "first_success_tip"
+    },
+    "first_success_tip": {
+      "page": "dashboard",
+      "surface": "success tip",
+      "journey": "activation",
+      "exposure_event": "success_tip_shown",
+      "positive_event": "first_success_action_taken",
+      "positive_stage": "success",
+      "secondary_feature": "guided_onboarding"
+    }
+  }
+}

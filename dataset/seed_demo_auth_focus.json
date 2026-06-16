@@ -1,0 +1,188 @@
+{
+  "seed_source": "seed_demo",
+  "seed_version": "auth_focus_v1",
+  "user_prefix": "auth_user",
+  "seed_anchor": "2026-06-08T08:30:00Z",
+  "seed_window_days": 9,
+  "random_seed": 777,
+  "features": [
+    {
+      "name": "Magic Link Login",
+      "key": "magic_link_login",
+      "description": "Destaca o login sem senha com link mágico para reduzir fricção de acesso.",
+      "enabled": true,
+      "rollout_percentage": 60,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.22
+    },
+    {
+      "name": "Signup Form Simplification",
+      "key": "signup_form_simplification",
+      "description": "Reduz o cadastro a poucos campos e facilita a conclusão do formulário.",
+      "enabled": true,
+      "rollout_percentage": 70,
+      "ml_enabled": true,
+      "ml_threshold_mode": "maximize_f1",
+      "ml_threshold_value": 0.18
+    },
+    {
+      "name": "Social Login Buttons",
+      "key": "social_login_buttons",
+      "description": "Mostra login com provedores sociais para acelerar a entrada na plataforma.",
+      "enabled": true,
+      "rollout_percentage": 55,
+      "ml_enabled": true,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.24
+    },
+    {
+      "name": "Password Reset Helper",
+      "key": "password_reset_helper",
+      "description": "Atalho contextual para recuperação de senha e reentrada na conta.",
+      "enabled": true,
+      "rollout_percentage": 45,
+      "ml_enabled": false,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.12
+    }
+  ],
+  "profiles": [
+    {
+      "segment": "new_visitor",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.42,
+      "primary_features": [
+        "signup_form_simplification",
+        "social_login_buttons"
+      ],
+      "secondary_features": [
+        "magic_link_login",
+        "password_reset_helper"
+      ],
+      "active_days_min": 1,
+      "active_days_max": 3,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [
+        8,
+        11,
+        18
+      ]
+    },
+    {
+      "segment": "returning_user",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.58,
+      "primary_features": [
+        "magic_link_login",
+        "social_login_buttons"
+      ],
+      "secondary_features": [
+        "password_reset_helper",
+        "signup_form_simplification"
+      ],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [
+        9,
+        13,
+        20
+      ]
+    },
+    {
+      "segment": "mobile_user",
+      "source": "mobile_web",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.5,
+      "primary_features": [
+        "signup_form_simplification",
+        "magic_link_login"
+      ],
+      "secondary_features": [
+        "social_login_buttons",
+        "password_reset_helper"
+      ],
+      "active_days_min": 1,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [
+        7,
+        12,
+        21
+      ]
+    },
+    {
+      "segment": "support_case",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.36,
+      "primary_features": [
+        "password_reset_helper",
+        "magic_link_login"
+      ],
+      "secondary_features": [
+        "signup_form_simplification"
+      ],
+      "active_days_min": 1,
+      "active_days_max": 2,
+      "sessions_min": 1,
+      "sessions_max": 1,
+      "hour_buckets": [
+        10,
+        17
+      ]
+    }
+  ],
+  "journeys": {
+    "magic_link_login": {
+      "page": "login",
+      "surface": "passwordless login",
+      "journey": "authentication",
+      "exposure_event": "magic_link_prompt_shown",
+      "positive_event": "magic_link_requested",
+      "positive_stage": "intent",
+      "secondary_feature": "password_reset_helper",
+      "conversion_event": "login_success"
+    },
+    "signup_form_simplification": {
+      "page": "signup",
+      "surface": "short signup form",
+      "journey": "registration",
+      "exposure_event": "signup_form_shown",
+      "positive_event": "signup_form_submitted",
+      "positive_stage": "signup",
+      "secondary_feature": "social_login_buttons",
+      "conversion_event": "signup_completed"
+    },
+    "social_login_buttons": {
+      "page": "login",
+      "surface": "social providers",
+      "journey": "authentication",
+      "exposure_event": "social_login_prompt_shown",
+      "positive_event": "social_login_clicked",
+      "positive_stage": "engagement",
+      "secondary_feature": "magic_link_login",
+      "conversion_event": "login_success"
+    },
+    "password_reset_helper": {
+      "page": "login",
+      "surface": "forgot password section",
+      "journey": "recovery",
+      "exposure_event": "password_reset_prompt_shown",
+      "positive_event": "password_reset_requested",
+      "positive_stage": "help",
+      "secondary_feature": "magic_link_login",
+      "conversion_event": "password_reset_completed"
+    }
+  }
+}

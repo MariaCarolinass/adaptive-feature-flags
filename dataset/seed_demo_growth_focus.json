@@ -1,0 +1,165 @@
+{
+  "seed_source": "seed_demo",
+  "seed_version": "growth_focus_v1",
+  "user_prefix": "growth_user",
+  "seed_anchor": "2026-06-05T09:00:00Z",
+  "seed_window_days": 16,
+  "random_seed": 91,
+  "features": [
+    {
+      "name": "Homepage Hero Variant",
+      "key": "homepage_hero_v2",
+      "description": "Hero alternativo para destacar propostas de valor e aumentar descoberta.",
+      "enabled": true,
+      "rollout_percentage": 55,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.15
+    },
+    {
+      "name": "Search Suggestions",
+      "key": "search_suggestions",
+      "description": "Sugestões contextuais no campo de busca para acelerar a navegação.",
+      "enabled": true,
+      "rollout_percentage": 70,
+      "ml_enabled": true,
+      "ml_threshold_mode": "maximize_f1",
+      "ml_threshold_value": 0.18
+    },
+    {
+      "name": "Retention Banner",
+      "key": "retention_banner",
+      "description": "Banner para reengajar usuários recorrentes e reduzir churn.",
+      "enabled": true,
+      "rollout_percentage": 35,
+      "ml_enabled": false,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.1
+    },
+    {
+      "name": "Pricing Tooltip",
+      "key": "pricing_tooltip",
+      "description": "Tooltip com comparativo de planos para apoiar decisão de compra.",
+      "enabled": true,
+      "rollout_percentage": 40,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.2
+    },
+    {
+      "name": "Community Invite",
+      "key": "community_invite",
+      "description": "Convite para comunidade e newsletter para ampliar retenção e alcance.",
+      "enabled": true,
+      "rollout_percentage": 25,
+      "ml_enabled": true,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.16
+    }
+  ],
+  "profiles": [
+    {
+      "segment": "new_visitor",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.38,
+      "primary_features": ["homepage_hero_v2", "search_suggestions"],
+      "secondary_features": ["pricing_tooltip", "community_invite"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [9, 12, 17]
+    },
+    {
+      "segment": "returning_customer",
+      "source": "mobile_app",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.72,
+      "primary_features": ["retention_banner", "community_invite"],
+      "secondary_features": ["homepage_hero_v2", "search_suggestions"],
+      "active_days_min": 3,
+      "active_days_max": 5,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [8, 13, 19]
+    },
+    {
+      "segment": "content_reader",
+      "source": "email_campaign",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.52,
+      "primary_features": ["community_invite", "homepage_hero_v2"],
+      "secondary_features": ["retention_banner", "pricing_tooltip"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 1,
+      "hour_buckets": [7, 11, 20]
+    },
+    {
+      "segment": "power_user",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.6,
+      "primary_features": ["search_suggestions", "pricing_tooltip"],
+      "secondary_features": ["community_invite", "retention_banner"],
+      "active_days_min": 3,
+      "active_days_max": 6,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [10, 15, 21]
+    }
+  ],
+  "journeys": {
+    "homepage_hero_v2": {
+      "page": "home",
+      "surface": "homepage hero",
+      "journey": "discovery",
+      "exposure_event": "homepage_hero_seen",
+      "positive_event": "hero_cta_clicked",
+      "positive_stage": "engagement",
+      "secondary_feature": "search_suggestions"
+    },
+    "search_suggestions": {
+      "page": "search",
+      "surface": "search bar",
+      "journey": "discovery",
+      "exposure_event": "search_suggestions_shown",
+      "positive_event": "search_suggestion_selected",
+      "positive_stage": "engagement",
+      "secondary_feature": "community_invite"
+    },
+    "pricing_tooltip": {
+      "page": "pricing",
+      "surface": "pricing table",
+      "journey": "consideration",
+      "exposure_event": "pricing_tooltip_shown",
+      "positive_event": "pricing_details_opened",
+      "positive_stage": "intent",
+      "secondary_feature": "community_invite"
+    },
+    "retention_banner": {
+      "page": "dashboard",
+      "surface": "retention banner",
+      "journey": "retention",
+      "exposure_event": "retention_banner_shown",
+      "positive_event": "retention_banner_clicked",
+      "positive_stage": "reengagement",
+      "secondary_feature": "community_invite"
+    },
+    "community_invite": {
+      "page": "community",
+      "surface": "invite banner",
+      "journey": "growth",
+      "exposure_event": "community_invite_shown",
+      "positive_event": "community_invite_clicked",
+      "positive_stage": "engagement",
+      "secondary_feature": "retention_banner"
+    }
+  }
+}

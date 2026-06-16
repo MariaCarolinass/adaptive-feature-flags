@@ -1,0 +1,134 @@
+{
+  "seed_source": "seed_demo",
+  "seed_version": "checkout_focus_v1",
+  "user_prefix": "checkout_user",
+  "seed_anchor": "2026-06-03T09:00:00Z",
+  "seed_window_days": 12,
+  "random_seed": 77,
+  "features": [
+    {
+      "name": "Checkout Upsell",
+      "key": "checkout_upsell",
+      "description": "Oferta incremental no checkout para aumentar ticket médio.",
+      "enabled": true,
+      "rollout_percentage": 45,
+      "ml_enabled": true,
+      "ml_threshold_mode": "maximize_f1",
+      "ml_threshold_value": 0.18
+    },
+    {
+      "name": "Pricing Tooltip",
+      "key": "pricing_tooltip",
+      "description": "Tooltip com comparativo de planos para apoiar decisão de compra.",
+      "enabled": true,
+      "rollout_percentage": 50,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.2
+    },
+    {
+      "name": "Account Upgrade CTA",
+      "key": "account_upgrade_cta",
+      "description": "Chamada para upgrade de plano em áreas de maior intenção.",
+      "enabled": true,
+      "rollout_percentage": 35,
+      "ml_enabled": true,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.22
+    },
+    {
+      "name": "Cart Reminder",
+      "key": "cart_reminder",
+      "description": "Lembrete visual para reduzir abandono de carrinho.",
+      "enabled": true,
+      "rollout_percentage": 30,
+      "ml_enabled": false,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.1
+    }
+  ],
+  "profiles": [
+    {
+      "segment": "ready_to_buy",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.82,
+      "primary_features": ["checkout_upsell", "pricing_tooltip"],
+      "secondary_features": ["account_upgrade_cta", "cart_reminder"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [10, 14, 20]
+    },
+    {
+      "segment": "price_sensitive",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.68,
+      "primary_features": ["pricing_tooltip", "checkout_upsell"],
+      "secondary_features": ["cart_reminder", "account_upgrade_cta"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [9, 13, 19]
+    },
+    {
+      "segment": "returning_purchaser",
+      "source": "mobile_app",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.7,
+      "primary_features": ["account_upgrade_cta", "checkout_upsell"],
+      "secondary_features": ["pricing_tooltip", "cart_reminder"],
+      "active_days_min": 2,
+      "active_days_max": 5,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [8, 12, 18]
+    }
+  ],
+  "journeys": {
+    "checkout_upsell": {
+      "page": "cart",
+      "surface": "cart drawer",
+      "journey": "conversion",
+      "exposure_event": "checkout_upsell_shown",
+      "positive_event": "checkout_upsell_clicked",
+      "positive_stage": "intent",
+      "secondary_feature": "account_upgrade_cta",
+      "conversion_event": "purchase_completed"
+    },
+    "pricing_tooltip": {
+      "page": "pricing",
+      "surface": "pricing table",
+      "journey": "consideration",
+      "exposure_event": "pricing_tooltip_shown",
+      "positive_event": "pricing_details_opened",
+      "positive_stage": "consideration",
+      "secondary_feature": "checkout_upsell"
+    },
+    "account_upgrade_cta": {
+      "page": "settings",
+      "surface": "settings cta",
+      "journey": "monetization",
+      "exposure_event": "upgrade_prompt_shown",
+      "positive_event": "upgrade_cta_clicked",
+      "positive_stage": "conversion",
+      "secondary_feature": "cart_reminder",
+      "conversion_event": "subscription_upgraded"
+    },
+    "cart_reminder": {
+      "page": "cart",
+      "surface": "cart reminder",
+      "journey": "conversion",
+      "exposure_event": "cart_reminder_shown",
+      "positive_event": "cart_reminder_clicked",
+      "positive_stage": "intent",
+      "secondary_feature": "checkout_upsell"
+    }
+  }
+}

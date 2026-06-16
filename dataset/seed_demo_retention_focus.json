@@ -1,0 +1,132 @@
+{
+  "seed_source": "seed_demo",
+  "seed_version": "retention_focus_v1",
+  "user_prefix": "retention_user",
+  "seed_anchor": "2026-06-09T09:00:00Z",
+  "seed_window_days": 18,
+  "random_seed": 177,
+  "features": [
+    {
+      "name": "Weekly Digest",
+      "key": "weekly_digest",
+      "description": "Resumo semanal para reativar usuários recorrentes.",
+      "enabled": true,
+      "rollout_percentage": 50,
+      "ml_enabled": true,
+      "ml_threshold_mode": "match_rollout",
+      "ml_threshold_value": 0.22
+    },
+    {
+      "name": "Streak Banner",
+      "key": "streak_banner",
+      "description": "Banner de sequência de uso para reforçar hábito.",
+      "enabled": true,
+      "rollout_percentage": 45,
+      "ml_enabled": true,
+      "ml_threshold_mode": "maximize_f1",
+      "ml_threshold_value": 0.19
+    },
+    {
+      "name": "Smart Alert Center",
+      "key": "smart_alert_center",
+      "description": "Central de alertas para eventos importantes do usuário.",
+      "enabled": true,
+      "rollout_percentage": 30,
+      "ml_enabled": true,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.2
+    },
+    {
+      "name": "Community Digest",
+      "key": "community_digest",
+      "description": "Convite para comunidade e engajamento recorrente.",
+      "enabled": true,
+      "rollout_percentage": 25,
+      "ml_enabled": false,
+      "ml_threshold_mode": "fixed",
+      "ml_threshold_value": 0.1
+    }
+  ],
+  "profiles": [
+    {
+      "segment": "returning_user",
+      "source": "mobile_app",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.66,
+      "primary_features": ["weekly_digest", "streak_banner"],
+      "secondary_features": ["smart_alert_center", "community_digest"],
+      "active_days_min": 3,
+      "active_days_max": 5,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [8, 12, 19]
+    },
+    {
+      "segment": "power_user",
+      "source": "web_app",
+      "device": "desktop",
+      "country": "BR",
+      "positive_probability": 0.74,
+      "primary_features": ["smart_alert_center", "streak_banner"],
+      "secondary_features": ["community_digest", "weekly_digest"],
+      "active_days_min": 4,
+      "active_days_max": 6,
+      "sessions_min": 1,
+      "sessions_max": 2,
+      "hour_buckets": [10, 15, 21]
+    },
+    {
+      "segment": "community_reader",
+      "source": "email_campaign",
+      "device": "mobile",
+      "country": "BR",
+      "positive_probability": 0.44,
+      "primary_features": ["community_digest", "weekly_digest"],
+      "secondary_features": ["streak_banner", "smart_alert_center"],
+      "active_days_min": 2,
+      "active_days_max": 4,
+      "sessions_min": 1,
+      "sessions_max": 1,
+      "hour_buckets": [7, 11, 18]
+    }
+  ],
+  "journeys": {
+    "weekly_digest": {
+      "page": "dashboard",
+      "surface": "weekly summary",
+      "journey": "retention",
+      "exposure_event": "weekly_digest_shown",
+      "positive_event": "weekly_digest_opened",
+      "positive_stage": "reengagement",
+      "secondary_feature": "streak_banner"
+    },
+    "streak_banner": {
+      "page": "dashboard",
+      "surface": "streak banner",
+      "journey": "retention",
+      "exposure_event": "streak_banner_shown",
+      "positive_event": "streak_banner_clicked",
+      "positive_stage": "habit",
+      "secondary_feature": "community_digest"
+    },
+    "smart_alert_center": {
+      "page": "alerts",
+      "surface": "alert center",
+      "journey": "retention",
+      "exposure_event": "alert_center_shown",
+      "positive_event": "alert_center_opened",
+      "positive_stage": "engagement",
+      "secondary_feature": "weekly_digest"
+    },
+    "community_digest": {
+      "page": "community",
+      "surface": "digest banner",
+      "journey": "retention",
+      "exposure_event": "community_digest_shown",
+      "positive_event": "community_digest_clicked",
+      "positive_stage": "engagement",
+      "secondary_feature": "streak_banner"
+    }
+  }
+}
