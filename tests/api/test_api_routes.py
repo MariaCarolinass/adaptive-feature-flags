@@ -112,7 +112,7 @@ def test_ingest_events_batch_returns_saved_count(monkeypatch) -> None:
             {
                 "user_id": "u124",
                 "feature_key": "new_checkout",
-                "event_type": "viewed_feature",
+                "event_type": "pricing_tooltip_shown",
                 "timestamp": "2026-04-22T10:01:00Z",
                 "properties": {"device": "desktop"},
             },
