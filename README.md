@@ -54,17 +54,40 @@ Depois de instalar e subir a API, você pode escolher **1 de 2 caminhos** para p
 
 ### Opção 1: Seed demo (mais rápido)
 
-O script [`scripts/seed_demo.py`](scripts/seed_demo.py) inicializa a base local com dados de exemplo para facilitar testes manuais do fluxo completo.
+O script [`scripts/seed_demo.py`](scripts/seed_demo.py) inicializa a base local com dados de exemplo para facilitar testes manuais do fluxo completo. Sem argumentos, ele importa todos os catálogos JSON do diretório [`dataset/`](dataset/), sincroniza as features demo e gera uma trilha de eventos correlacionados por usuário, com jornadas que fazem sentido no dashboard.
 
 ```bash
 python3 scripts/seed_demo.py
 ```
 
-O script é idempotente: rodar mais de uma vez não duplica registros equivalentes.
+Para importar só um catálogo:
+
+```bash
+python3 scripts/seed_demo.py --catalog dataset/seed_demo_checkout_focus.json
+python3 scripts/seed_demo.py --catalog dataset/seed_demo_growth_focus.json
+python3 scripts/seed_demo.py --catalog dataset/seed_demo_activation_focus.json
+python3 scripts/seed_demo.py --catalog dataset/seed_demo_retention_focus.json
+python3 scripts/seed_demo.py --catalog dataset/seed_demo_auth_focus.json
+```
+
+O script é idempotente: rodar mais de uma vez não duplica registros equivalentes. Os eventos são distribuídos ao longo de vários dias e incluem fluxos como `view -> checkout_upsell_shown -> checkout_upsell_clicked/purchase_completed` ou `view -> onboarding_step_shown -> onboarding_completed`.
+Cada catálogo gera 50 usuários sintéticos com distribuição por perfil, o que deixa a base mais útil para treino e mais crível na UI.
+
+### Taxonomia de eventos
+
+O projeto separa os eventos em quatro grupos para transformar telemetria bruta em sinais de produto:
+
+- `VIEW_EVENT_TYPES`: exposição inicial. Exemplo: `view`, `checkout_upsell_shown`, `onboarding_step_shown`.
+- `INTERMEDIATE_POSITIVE_EVENT_TYPES`: sinais de interesse no meio do funil. Exemplo: `checkout_upsell_clicked`, `pricing_details_opened`, `hero_cta_clicked`.
+- `TERMINAL_POSITIVE_EVENT_TYPES`: conversão final. Exemplo: `transaction`, `purchase_completed`, `subscription_upgraded`.
+- `POSITIVE_EVENT_TYPES`: união dos sinais que contam como sucesso/valor para o treino e para a avaliação.
+
+O fluxo do ML usa essa taxonomia para construir agregados por usuário, treinar o modelo e decidir se uma feature deve ficar ligada com base no score do modelo ou no rollout determinístico. O detalhamento completo está em [`docs/implementation/ml-decision-flow-in-depth.md`](docs/implementation/ml-decision-flow-in-depth.md).
 
 ### Opção 2: Importação CSV
 
 O importador oficial é o [`scripts/import_events_csv.py`](scripts/import_events_csv.py). Ele importa eventos de CSV para o schema canônico de eventos da API.
+O projeto pode ser testado com qualquer arquivo CSV compatível: use `ecommerce_dataset` se o arquivo seguir o contrato do dataset e-commerce, ou `generic` para qualquer outro layout com mapeamento de colunas.
 
 Modos suportados:
 
@@ -78,7 +101,7 @@ Exemplos:
 ```bash
 python3 scripts/import_events_csv.py \
   --adapter ecommerce_dataset \
-  --csv dataset/events.csv \
+  --csv ./seu_arquivo.csv \
   --feature-key-mode item \
   --limit 10000
 ```
