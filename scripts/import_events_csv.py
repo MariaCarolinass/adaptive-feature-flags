@@ -4,13 +4,13 @@ from __future__ import annotations
 Examples:
 python3 scripts/import_events_csv.py \
   --adapter ecommerce_dataset \
-  --csv dataset/events.csv \
+  --csv ./seu_arquivo.csv \
   --feature-key-mode item \
   --limit 10000
 
 python3 scripts/import_events_csv.py \
   --adapter generic \
-  --csv ./events.csv \
+  --csv ./seu_arquivo.csv \
   --source web_app \
   --mapping-json '{"user_id":"uid","feature_key":"feature","event_type":"event_name","timestamp":"ts"}'
 """
