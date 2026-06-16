@@ -534,9 +534,41 @@ function renderEvaluationTable() {
   $("evaluationCount").textContent = `${state.evaluations.length} linhas`;
   $("evalBody").innerHTML = state.evaluations.length
     ? state.evaluations.map((r) => {
-    return `\n<tr>\n<td>${r.user_id}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${r.score ?? "-"}</td>\n<td>${r.threshold ?? "-"}</td>\n<td>${r.experiment?.variant ?? "-"}</td>\n</tr>`;
+    return `\n<tr>\n<td>${r.user_id}</td>\n<td>${escapeHtml(r.feature_key || "-")}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${r.score ?? "-"}</td>\n<td>${r.threshold ?? "-"}</td>\n<td>${r.experiment?.variant ?? "-"}</td>\n</tr>`;
   }).join("")
-    : '<tr><td colspan="6">Nenhuma avaliação feita ainda.</td></tr>';
+    : '<tr><td colspan="7">Nenhuma avaliação feita ainda.</td></tr>';
+}
+
+function featureKeysFromEvents(events) {
+  const stats = new Map();
+  for (const event of Array.isArray(events) ? events : []) {
+    const key = String(event?.feature_key || "").trim();
+    if (!key) continue;
+    const timestamp = Number(new Date(event.timestamp || 0));
+    const current = stats.get(key) || { key, count: 0, lastSeen: 0 };
+    current.count += 1;
+    current.lastSeen = Math.max(current.lastSeen, Number.isFinite(timestamp) ? timestamp : 0);
+    stats.set(key, current);
+  }
+
+  return [...stats.values()]
+    .sort((a, b) => b.count - a.count || b.lastSeen - a.lastSeen)
+    .map((entry) => entry.key);
+}
+
+async function resolveEvaluationFeatureKeys(userId) {
+  const inMemoryEvents = state.events.filter((event) => event.user_id === userId);
+  const inMemoryKeys = featureKeysFromEvents(inMemoryEvents);
+  if (inMemoryKeys.length) return inMemoryKeys;
+
+  const params = new URLSearchParams({ user_id: userId });
+  const out = await api(`/events?${params.toString()}`);
+  if (out.ok && Array.isArray(out.data)) {
+    const fromApi = featureKeysFromEvents(out.data);
+    if (fromApi.length) return fromApi;
+  }
+
+  return [];
 }
 
 function renderDashboardTables() {
@@ -1104,28 +1136,39 @@ async function loadModelRuns(limit = 5, { silent = false } = {}) {
 async function evaluateUsers() {
   const release = setLoading("simulateBtn", "Avaliando...");
   try {
-    const featureKey = $("featureKey").value.trim();
     const users = $("users").value.split("\n").map((u) => u.trim()).filter(Boolean);
-    if (!featureKey || !users.length) {
-      setStatus("Informe o identificador da regra e ao menos um usuário.");
+    if (!users.length) {
+      setStatus("Informe ao menos um usuário.");
       return;
     }
 
     const output = [];
     for (const userId of users) {
-      const out = await api("/evaluate", {
-        method: "POST",
-        body: JSON.stringify({ feature_key: featureKey, user: { user_id: userId } }),
-      });
-      output.push(out.ok ? out.data : { user_id: userId, enabled: false, decision_source: `error_${out.status}` });
+      const featureKeys = await resolveEvaluationFeatureKeys(userId);
+      if (!featureKeys.length) {
+        output.push({ user_id: userId, feature_key: "-", enabled: false, decision_source: "feature_not_found" });
+        continue;
+      }
+
+      for (const featureKey of featureKeys) {
+        const out = await api("/evaluate", {
+          method: "POST",
+          body: JSON.stringify({ feature_key: featureKey, user: { user_id: userId } }),
+        });
+        output.push(out.ok ? out.data : { user_id: userId, feature_key: featureKey, enabled: false, decision_source: `error_${out.status}` });
+      }
     }
 
+    if (output.length) {
+      const latest = new Set(output.map((row) => `${row.user_id}:${row.feature_key}`));
+      state.evaluations = [...output, ...state.evaluations.filter((row) => !latest.has(`${row.user_id}:${row.feature_key}`))];
+    }
     updateMetricCards();
     renderEvaluationTable();
     drawCharts();
     markDashboardSync();
     renderDashboardTables();
-    setStatus(`Avaliação concluída para ${users.length} usuários.`);
+    setStatus(`Avaliação concluída para ${users.length} usuários e ${output.length} regras.`);
     await loadEvaluations();
   } finally { release(); }
 }
