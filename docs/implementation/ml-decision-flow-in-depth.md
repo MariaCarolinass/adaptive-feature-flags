@@ -6,9 +6,16 @@ Este documento explica como o código de ML funciona hoje, do treino até a deci
 
 1. Eventos são persistidos (`/events` ou `/ingest/events`).
 2. `POST /train` chama `TrainingService.train()`.
-3. O treino gera artefato `.joblib` com modelo + metadados + colunas.
+3. O treino transforma eventos brutos em features agregadas por usuário e gera artefato `.joblib` com modelo + metadados + colunas.
 4. `POST /evaluate` usa `EvaluationService.evaluate()`.
-5. Se ML estiver disponível, calcula score; se não, aplica fallback de rollout determinístico.
+5. Se o modelo estiver pronto e a feature permitir ML, calcula score; se não, aplica fallback de rollout determinístico.
+
+O ponto principal é que o modelo não lê nomes de eventos isolados. Ele lê sinais agregados por usuário, construídos a partir da taxonomia de eventos do produto:
+
+- `VIEW_EVENT_TYPES`: exposição.
+- `INTERMEDIATE_POSITIVE_EVENT_TYPES`: interesse no meio do funil.
+- `TERMINAL_POSITIVE_EVENT_TYPES`: conversão final.
+- `POSITIVE_EVENT_TYPES`: conjunto positivo total usado no target do treino.
 
 Arquivos centrais:
 
@@ -129,22 +136,62 @@ Quando não há decisão por ML:
 
 Isso garante consistência por usuário/feature entre chamadas.
 
-## 4) Como `FeatureBuilder` define sinal positivo
+### 3.3 Como o threshold da decisão é escolhido
 
-`FeatureBuilder` usa conjuntos vindos de `app/core/event_types.py`:
+A feature controla a política de threshold com `ml_threshold_mode`:
+
+- `fixed`: usa `ml_threshold_value` salvo na própria feature.
+- `match_rollout`: deriva o threshold do `rollout_percentage`, para manter a experiência alinhada ao rollout atual.
+- `maximize_f1`: usa o `best_threshold_by_f1` calculado no treino e salvo no metadata do modelo.
+
+Na prática:
+
+- a feature define a política;
+- o treino calcula métricas e o melhor threshold do modelo;
+- a avaliação escolhe o caminho mais adequado na hora da decisão.
+
+O treino não sobrescreve a feature com esse threshold. Ele salva o resultado do modelo e o metadata correspondente.
+
+## 4) Taxonomia de eventos
+
+Os conjuntos vêm de `app/core/event_types.py`, que normaliza os valores definidos em `settings`:
 
 - `POSITIVE_EVENT_TYPES`
 - `VIEW_EVENT_TYPES`
 - `INTERMEDIATE_POSITIVE_EVENT_TYPES`
 - `TERMINAL_POSITIVE_EVENT_TYPES`
 
-Esses conjuntos são derivados de `settings` e controlam:
+### 4.1 O que cada grupo significa
+
+| Grupo | Papel no produto | Exemplos | Uso na ML |
+| --- | --- | --- | --- |
+| `VIEW_EVENT_TYPES` | exposição / awareness | `view`, `checkout_upsell_shown`, `onboarding_step_shown` | vira `is_view` e alimenta `view_events` |
+| `INTERMEDIATE_POSITIVE_EVENT_TYPES` | interesse no meio do funil | `checkout_upsell_clicked`, `pricing_details_opened`, `hero_cta_clicked` | vira `is_intermediate_positive` e alimenta `cart_events` |
+| `TERMINAL_POSITIVE_EVENT_TYPES` | conversão final | `transaction`, `purchase_completed`, `subscription_upgraded` | vira `is_terminal_positive` e alimenta `purchase_events` |
+| `POSITIVE_EVENT_TYPES` | qualquer evento de sucesso relevante | união dos sinais acima + eventos como `addtocart` | vira `is_positive`, `positive_events` e o `target` |
+
+### 4.2 Como isso vira features
+
+`FeatureBuilder` marca cada evento com flags booleanas e depois agrega por usuário.
+As colunas principais geradas pelo builder são:
 
 - `positive_events`
 - `view_events`
 - `cart_events`
 - `purchase_events`
-- `target` (1 se usuário teve evento positivo; senão 0)
+- `unique_features`
+- `active_days`
+- `hours_since_last_event`
+- `events_per_day`
+- `positive_rate`
+- `target`
+
+O target do MVP é binário:
+
+- `1` se o usuário tiver pelo menos um evento em `POSITIVE_EVENT_TYPES`
+- `0` caso contrário
+
+Isso permite treinar um modelo que aprenda padrões de engajamento e conversão a partir da telemetria realista do seed ou da ingestão.
 
 ## 5) Observabilidade no fluxo de ML
 
