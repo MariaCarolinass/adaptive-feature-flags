@@ -47,7 +47,7 @@ def test_ingest_service_saves_events_in_batch(session_factory) -> None:
             {
                 "user_id": "u124",
                 "feature_key": "new_checkout",
-                "event_type": "viewed_feature",
+                "event_type": "checkout_upsell_shown",
                 "timestamp": datetime(2026, 4, 22, 10, 1, tzinfo=timezone.utc),
                 "properties": {"device": "desktop"},
             },
