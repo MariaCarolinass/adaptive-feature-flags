@@ -6,6 +6,7 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 
 - Visão do projeto e escopo MVP: `product/mvp-product-vision.md`
 - Visão técnica do sistema: `architecture/system-overview.md`
+- Esquema do banco de dados: `architecture/database-schema.md`
 - Contratos da API: `api/README.md`
 - Decisões técnicas (ADRs): `decisions/README.md`
 - Implementações críticas de código: `implementation/critical-code-paths.md`
