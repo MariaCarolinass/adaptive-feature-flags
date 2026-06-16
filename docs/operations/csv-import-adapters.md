@@ -33,7 +33,7 @@ Exemplo:
 ```bash
 python3 scripts/import_events_csv.py \
   --adapter ecommerce_dataset \
-  --csv dataset/events.csv \
+  --csv ./seu_arquivo.csv \
   --feature-key-mode item \
   --limit 10000
 ```
@@ -69,7 +69,7 @@ Comando:
 ```bash
 python3 scripts/import_events_csv.py \
   --adapter generic \
-  --csv ./events.csv \
+  --csv ./seu_arquivo.csv \
   --source web_app \
   --mapping-json '{"user_id":"uid","feature_key":"flag","event_type":"action","timestamp":"ts"}'
 ```
@@ -84,4 +84,4 @@ python3 scripts/import_events_csv.py \
 ## Como escolher
 
 - Use `ecommerce_dataset` se seu CSV já é desse formato.
-- Use `generic` para qualquer layout customizado.
+- Use `generic` para qualquer layout customizado ou para testar o projeto com um CSV próprio.
