@@ -18,7 +18,7 @@ def handle_user_request(user_id: str) -> None:
 
     render_checkout(user_id, enabled=enabled)
 
-    event_type = "viewed_feature" if enabled else "viewed_default_checkout"
+    event_type = "checkout_upsell_shown" if enabled else "viewed_default_checkout"
     tracked = client.track(
         user_id=user_id,
         feature_key="new_checkout",

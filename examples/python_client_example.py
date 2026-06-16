@@ -10,7 +10,7 @@ def main() -> None:
     tracked = client.track(
         user_id="external_user_123",
         feature_key="new_checkout",
-        event_type="viewed_feature",
+        event_type="pricing_tooltip_shown",
         properties={"device": "mobile", "source_app": "shop-web"},
     )
     print(tracked)
