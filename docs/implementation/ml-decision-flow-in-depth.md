@@ -69,6 +69,8 @@ Transformação para dataset:
   - `feature_key`
 - `FeatureBuilder.build_from_dataframe()` agrega por usuário e cria features numéricas.
 
+Na UI e no catálogo, `event_type` aparece como atividade; no pipeline de treino ele continua sendo o identificador técnico do evento.
+
 Features usadas no treino (MVP):
 
 Essas colunas são calculadas por usuário a partir dos eventos brutos:
@@ -151,6 +153,21 @@ Na prática:
 - a avaliação escolhe o caminho mais adequado na hora da decisão.
 
 O treino não sobrescreve a feature com esse threshold. Ele salva o resultado do modelo e o metadata correspondente.
+
+### 3.4 Como interpretar na interface
+
+Na página de regras, a interface traduz essa política para termos mais simples:
+
+- `Pontuação mínima` é o corte usado quando o modo está em `Corte fixo`.
+- O valor inicial exibido no formulário é `0.1`, mas ele pode ser alterado por regra.
+- `Percentual de liberação` define a cobertura alvo quando o modo está em `Acompanhar cobertura`.
+- `Automática` usa o melhor corte encontrado no treino do modelo.
+
+Em resumo:
+
+- `corte` = o limite de pontuação que decide se a regra libera ou bloqueia;
+- `Pontuação mínima` = o valor fixo desse corte quando o modo é manual;
+- `Percentual de liberação` = a fração de usuários que podem ser liberados no modo gradual.
 
 ## 4) Taxonomia de eventos
 
