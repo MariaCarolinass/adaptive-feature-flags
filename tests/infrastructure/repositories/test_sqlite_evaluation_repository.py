@@ -17,6 +17,7 @@ def _evaluation(
         id=None,
         feature_key=feature_key,
         user_id=user_id,
+        activity="viewed_feature",
         enabled=True,
         decision_source="rollout",
         score=0.42,

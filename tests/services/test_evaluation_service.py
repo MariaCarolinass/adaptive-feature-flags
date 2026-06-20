@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from app.domain.entities.event import Event
 from app.domain.entities.evaluation import EvaluationRecord
@@ -86,14 +86,20 @@ def _feature(*, enabled: bool = True, ml_enabled: bool = True) -> Feature:
     )
 
 
-def _event(user_id: str, event_type: str) -> Event:
+def _event(
+    user_id: str,
+    event_type: str,
+    feature_key: str = "feature_a",
+    *,
+    timestamp: datetime | None = None,
+) -> Event:
     return Event(
         id=1,
         source="test",
         user_id=user_id,
-        feature_key="feature_a",
+        feature_key=feature_key,
         event_type=event_type,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=timestamp or datetime.now(timezone.utc),
         properties={},
     )
 
@@ -292,3 +298,45 @@ def test_evaluate_persists_record_when_repository_is_available(monkeypatch) -> N
     assert len(repo.rows) == 1
     assert repo.rows[0].feature_key == "feature_a"
     assert repo.rows[0].user_id == "u1"
+
+
+def test_evaluate_uses_latest_activity_for_the_evaluated_feature(monkeypatch) -> None:
+    class _Serializer:
+        def load_feature_columns(self, _artifact_path: str) -> list[str]:
+            return ["unique_features", "active_days"]
+
+    class _Predictor:
+        def __init__(self, _: str) -> None:
+            pass
+
+        def predict_score(self, payload: dict) -> float:
+            return 0.61
+
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelSerializer", _Serializer)
+    monkeypatch.setattr("app.domain.services.evaluation_service.ModelPredictor", _Predictor)
+
+    service = EvaluationService(
+        feature_repository=_FeatureRepo(_feature()),
+        event_repository=_EventRepo(
+            [
+                _event("u1", "view", "feature_a", timestamp=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)),
+                _event("u1", "transaction", "feature_b", timestamp=datetime(2026, 1, 1, 12, 1, tzinfo=timezone.utc)),
+                _event("u1", "addtocart", "feature_a", timestamp=datetime(2026, 1, 1, 12, 2, tzinfo=timezone.utc)),
+            ]
+        ),
+        model_repository=_ModelRepo(
+            ModelMetadata(
+                status="ready",
+                model_name="random_forest",
+                model_version="v1",
+                trained_at=datetime.now(timezone.utc),
+                metrics={"accuracy": 0.8},
+                artifact_path="/tmp/model.joblib",
+            )
+        ),
+        experiment_service=_ExperimentService(),
+    )
+
+    result = service.evaluate("feature_a", {"user_id": "u1"})
+
+    assert result["activity"] == "addtocart"
