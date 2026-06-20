@@ -15,7 +15,7 @@ cp .env.example .env
 pip install -r requirements.txt
 ```
 
-Rodar API local:
+Executar API local:
 
 ```bash
 uvicorn app.main:app --reload
@@ -33,7 +33,7 @@ uvicorn app.main:app --reload
 
 ```bash
 source .venv/bin/activate
-pytest
+.venv/bin/pytest
 python3 -m compileall -q app tests
 ```
 
@@ -64,7 +64,7 @@ Inclua no PR:
 
 Checklist:
 
-- [ ] testes passando (`pytest`)
+- [ ] testes passando (`.venv/bin/pytest`)
 - [ ] `compileall` passando
 - [ ] sem rotas sem suporte em service/repositório
 - [ ] documentação atualizada quando aplicável
