@@ -29,7 +29,7 @@ Request:
 {
   "name": "Checkout CTA A/B",
   "feature_key": "new_checkout",
-  "primary_metric_event": "purchase",
+  "primary_metric_event": "viewed_feature",
   "min_samples_per_variant": 100,
   "min_lift": 0.02,
   "enabled": true
@@ -40,7 +40,7 @@ Campos principais:
 
 - `min_samples_per_variant`: amostras mínimas por variante antes de encerrar o teste.
 - `min_lift`: diferença mínima entre as variantes para permitir decisão final.
-- `primary_metric_event`: evento usado como sucesso do teste, por exemplo `transaction`.
+- `primary_metric_event`: atividade usada como sucesso do teste, por exemplo `viewed_feature`.
 
 ## O que a variante significa
 
@@ -59,10 +59,16 @@ O endpoint de resultado conta somente eventos que:
 - têm `ab_variant` salvo em `properties`;
 - usam o `primary_metric_event` definido no experimento para marcar sucesso.
 
+O retorno também mostra usuários únicos por variante:
+
+- `user_stats.A.users`
+- `user_stats.B.users`
+
 O cálculo retorna:
 
 - quantidade de amostras de A e B;
 - quantidade de positivos em A e B;
+- quantidade de usuários únicos em A e B;
 - taxa de A e B;
 - lift de B contra A;
 - diferença mínima configurada;
