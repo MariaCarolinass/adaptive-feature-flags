@@ -22,23 +22,23 @@ app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description=(
-        "Event-driven feature flag API for adaptive rollout decisions.\n\n"
-        "This service combines deterministic rollout with machine learning-assisted evaluation, "
-        "using safe fallback behavior when model scoring is unavailable.\n\n"
-        "### Main Flows\n"
-        "- Feature lifecycle: create, list, update, and delete via `/features`\n"
-        "- Event ingestion: single events via `/events` and batch ingestion via `/ingest/events` "
-        "(with operational-metric validation and partial rejection accounting)\n"
-        "- Model training: synchronous `/train`\n"
-        "- Online decision: user-level evaluation via `/evaluate`\n"
-        "- Experimentation: A/B-lite setup and evaluation via `/experiments`\n"
-        "- Model governance: current status via `/model/status` and training history via `/model/runs`\n"
-        "- Operational observability: in-memory metrics snapshot via `/metrics`\n\n"
-        "### Design Principles\n"
-        "- Predictable behavior with deterministic rollout\n"
-        "- Progressive intelligence with machine learning when ready\n"
-        "- Resilience through fallback-first decision flow\n"
-        "- Incremental experimentation with deterministic A/B allocation"
+        "API event-driven para regras, atividades, testes e avaliação assistida por modelo.\n\n"
+        "O serviço combina liberação gradual determinística com avaliação por machine learning, "
+        "usando fallback seguro quando a pontuação do modelo não está disponível.\n\n"
+        "### Fluxos principais\n"
+        "- Catálogo de atividades: criar, listar, atualizar e remover via `/activities`\n"
+        "- Regras: criar, listar, atualizar e remover via `/features`\n"
+        "- Atividades: registro individual via `/events` e ingestão em lote via `/ingest/events`\n"
+        "- Treinamento do modelo: execução síncrona via `/train`\n"
+        "- Avaliação: decisão por usuário via `/evaluate`\n"
+        "- Testes: configuração e resultado via `/experiments`\n"
+        "- Situação do modelo: estado atual via `/model/status` e histórico via `/model/runs`\n"
+        "- Métricas operacionais: snapshot em memória via `/metrics`\n\n"
+        "### Princípios de design\n"
+        "- Comportamento previsível com liberação gradual determinística\n"
+        "- Inteligência progressiva com machine learning quando pronto\n"
+        "- Resiliência com fallback antes da decisão final\n"
+        "- Experimentação incremental com distribuição determinística A/B"
     ),
     docs_url="/docs" if settings.enable_docs else None,
     redoc_url="/redoc" if settings.enable_docs else None,
@@ -54,7 +54,7 @@ app.include_router(api_router)
 
 ui_dir = Path(__file__).resolve().parent.parent / "ui"
 
-@app.get("/", tags=["root"], summary="UI dashboard", description="Serves the web UI dashboard.")
+@app.get("/", tags=["UI"], summary="Abrir interface web", description="Serve a interface web principal do produto.")
 def root():
     index_file = ui_dir / "index.html"
     if index_file.exists():
@@ -62,7 +62,7 @@ def root():
     return {"message": settings.app_name}
 
 
-@app.get("/health", tags=["health"], summary="Healthcheck", description="Checks if the API is responsive.")
+@app.get("/health", tags=["Saúde"], summary="Verificar saúde", description="Verifica se a API está respondendo.")
 def healthcheck():
     return {"status": "ok"}
 
