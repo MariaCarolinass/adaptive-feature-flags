@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -36,6 +36,37 @@ def test_create_and_list_events_with_filters(session_factory) -> None:
     assert len(events_f1) == 2
 
 
+def test_create_event_updates_existing_event_with_same_identity(session_factory) -> None:
+    repo = SqliteEventRepository(session_factory)
+    service = EventService(repo)
+    first_ts = datetime.now(timezone.utc)
+    second_ts = first_ts + timedelta(minutes=5)
+
+    first = service.create_event(
+        user_id="u1",
+        feature_key="f1",
+        event_type="view",
+        timestamp=first_ts,
+        properties={"step": 1},
+        source="web_app",
+    )
+    second = service.create_event(
+        user_id="u1",
+        feature_key="f1",
+        event_type="view",
+        timestamp=second_ts,
+        properties={"step": 2},
+        source="web_app",
+    )
+
+    events = service.list_events(user_id="u1", feature_key="f1", event_type="view")
+    assert len(events) == 1
+    assert second.id == first.id
+    assert events[0].id == first.id
+    assert events[0].timestamp == second_ts
+    assert events[0].properties["step"] == 2
+
+
 def test_update_and_delete_event(session_factory) -> None:
     repo = SqliteEventRepository(session_factory)
     service = EventService(repo)
@@ -62,6 +93,40 @@ def test_update_and_delete_event(session_factory) -> None:
     assert service.get_event_by_id(created.id) is None
 
 
+def test_update_event_moves_record_to_top_of_list(session_factory) -> None:
+    repo = SqliteEventRepository(session_factory)
+    service = EventService(repo)
+
+    first = service.create_event(
+        user_id="u1",
+        feature_key="f1",
+        event_type="view",
+        timestamp=datetime.now(timezone.utc) - timedelta(hours=1),
+        properties={"step": 1},
+    )
+    second = service.create_event(
+        user_id="u2",
+        feature_key="f1",
+        event_type="click",
+        timestamp=datetime.now(timezone.utc),
+        properties={"step": 2},
+    )
+
+    updated = service.update_event(
+        event_id=first.id,
+        user_id="u1",
+        feature_key="f1",
+        event_type="view",
+        timestamp=datetime.now(timezone.utc),
+        properties={"step": 3},
+    )
+
+    events = service.list_events(feature_key="f1")
+    assert events[0].id == updated.id
+    assert events[0].properties["step"] == 3
+    assert events[1].id == second.id
+
+
 def test_update_event_requires_existing_id(session_factory) -> None:
     repo = SqliteEventRepository(session_factory)
     service = EventService(repo)
@@ -75,4 +140,3 @@ def test_update_event_requires_existing_id(session_factory) -> None:
             timestamp=datetime.now(timezone.utc),
             properties={},
         )
-
