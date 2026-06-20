@@ -28,6 +28,19 @@ class FeatureModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class ActivityModel(Base):
+    __tablename__ = "activities"
+    __table_args__ = (UniqueConstraint("key", name="uq_activities_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class EventModel(Base):
     __tablename__ = "events"
 
@@ -36,6 +49,7 @@ class EventModel(Base):
     feature_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     event_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     properties: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
 
@@ -45,6 +59,7 @@ class EvaluationModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     feature_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    activity: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
     decision_source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
