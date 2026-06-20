@@ -1,27 +1,27 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TrainProcessInfo(BaseModel):
-    total_events: int
-    unique_users: int
-    positive_events: int
-    duration_ms: int
-    feature_columns: list[str]
-    benchmark: list[dict[str, Any]]
-    dataset_profile: dict[str, Any]
+    total_events: int = Field(description="Total de atividades usadas no treino.")
+    unique_users: int = Field(description="Quantidade de usuários únicos no conjunto.")
+    positive_events: int = Field(description="Quantidade de eventos positivos usados no treino.")
+    duration_ms: int = Field(description="Duração do treino em milissegundos.")
+    feature_columns: list[str] = Field(description="Colunas derivadas usadas como variáveis do modelo.")
+    benchmark: list[dict[str, Any]] = Field(description="Comparação entre os modelos candidatos.")
+    dataset_profile: dict[str, Any] = Field(description="Resumo do conjunto de dados usado no treino.")
 
 
 class TrainResponse(BaseModel):
-    status: str
-    model_name: str
-    model_version: str
-    artifact_path: str
-    trained_at: datetime
-    metrics: dict[str, Any]
-    process: TrainProcessInfo
+    status: str = Field(description="Situação do modelo após o treino.")
+    model_name: str = Field(description="Nome do modelo selecionado.")
+    model_version: str = Field(description="Versão do modelo treinado.")
+    artifact_path: str = Field(description="Caminho do artefato salvo no disco.")
+    trained_at: datetime = Field(description="Data e hora do treino.")
+    metrics: dict[str, Any] = Field(description="Métricas do modelo treinado.")
+    process: TrainProcessInfo = Field(description="Detalhes do processo de treino.")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -68,11 +68,11 @@ class TrainResponse(BaseModel):
 
 
 class ModelStatusResponse(BaseModel):
-    status: str
-    model_name: str | None = None
-    model_version: str | None = None
-    trained_at: datetime | None = None
-    metrics: dict[str, Any] | None = None
+    status: str = Field(description="Situação atual do modelo.")
+    model_name: str | None = Field(default=None, description="Nome do modelo atualmente carregado.")
+    model_version: str | None = Field(default=None, description="Versão do modelo atualmente carregado.")
+    trained_at: datetime | None = Field(default=None, description="Data e hora do último treino disponível.")
+    metrics: dict[str, Any] | None = Field(default=None, description="Métricas do último treino.")
 
     model_config = ConfigDict(
         json_schema_extra={

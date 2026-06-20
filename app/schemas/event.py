@@ -7,16 +7,16 @@ class EventCreate(BaseModel):
         default=None,
         min_length=1,
         max_length=100,
-        description="Canonical source system identifier (for example: web_app, ecommerce_dataset, datadog).",
+        description="Identificador da origem da atividade, como web_app, mobile_app ou email_campaign.",
     )
-    user_id: str = Field(min_length=1, max_length=100, description="User identifier from the source system.")
-    feature_key: str = Field(min_length=1, max_length=50, description="Feature key related to this event.")
-    event_type: str = Field(min_length=1, max_length=50, description="Event type (for example: view, addtocart, transaction).")
-    timestamp: datetime = Field(description="Event timestamp in UTC.")
+    user_id: str = Field(min_length=1, max_length=100, description="Identificador do usuário.")
+    feature_key: str = Field(min_length=1, max_length=50, description="Identificador da regra relacionada à atividade.")
+    event_type: str = Field(min_length=1, max_length=50, description="Identificador técnico da atividade.")
+    timestamp: datetime = Field(description="Data e hora da atividade em UTC.")
     properties: dict[str, str | int | float | bool | None] = Field(
         default_factory=dict,
         description=(
-            "Additional event properties. Supports optional operational metrics: "
+            "Propriedades adicionais da atividade. Suporta métricas operacionais opcionais: "
             "`latency_ms`, `error_rate`, `cpu_pct`, `mem_pct`."
         ),
     )
@@ -24,16 +24,14 @@ class EventCreate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_id": "257597",
-                "feature_key": "item_355908",
-                "event_type": "view",
-                "timestamp": "2015-06-02T05:02:12.117000Z",
-                "source": "ecommerce_dataset",
+                "user_id": "user_123",
+                "feature_key": "new_checkout",
+                "event_type": "viewed_feature",
+                "timestamp": "2026-05-23T12:00:00Z",
+                "source": "web_app",
                 "properties": {
-                    "source": "ecommerce_dataset",
-                    "raw_itemid": "355908",
-                    "raw_event": "view",
-                    "transactionid": None
+                    "activity_name": "Visualizou a funcionalidade",
+                    "page": "checkout"
                 }
             }
         }
@@ -53,16 +51,14 @@ class EventResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 10,
-                "user_id": "257597",
-                "feature_key": "item_355908",
-                "event_type": "view",
-                "timestamp": "2015-06-02T05:02:12.117000Z",
-                "source": "ecommerce_dataset",
+                "user_id": "user_123",
+                "feature_key": "new_checkout",
+                "event_type": "viewed_feature",
+                "timestamp": "2026-05-23T12:00:00Z",
+                "source": "web_app",
                 "properties": {
-                    "source": "ecommerce_dataset",
-                    "raw_itemid": "355908",
-                    "raw_event": "view",
-                    "transactionid": None
+                    "activity_name": "Visualizou a funcionalidade",
+                    "page": "checkout"
                 },
             }
         }
