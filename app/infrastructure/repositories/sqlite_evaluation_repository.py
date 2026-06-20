@@ -17,6 +17,7 @@ class SqliteEvaluationRepository(EvaluationRepository):
             row = EvaluationModel(
                 feature_key=evaluation.feature_key,
                 user_id=evaluation.user_id,
+                activity=evaluation.activity,
                 enabled=evaluation.enabled,
                 decision_source=evaluation.decision_source,
                 score=evaluation.score,
@@ -50,6 +51,7 @@ class SqliteEvaluationRepository(EvaluationRepository):
             id=row.id,
             feature_key=row.feature_key,
             user_id=row.user_id,
+            activity=row.activity,
             enabled=row.enabled,
             decision_source=row.decision_source,
             score=row.score,
