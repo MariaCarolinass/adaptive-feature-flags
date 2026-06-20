@@ -5,16 +5,16 @@ from app.core.logging import get_logger
 from app.dependencies import training_service
 from app.schemas.model import ModelStatusResponse, TrainResponse
 
-router = APIRouter(tags=["model"])
+router = APIRouter(tags=["Modelo"])
 logger = get_logger(__name__)
 
 
 @router.post(
     "/train",
     response_model=TrainResponse,
-    summary="Train model",
-    description="Trains the ML model using persisted events and returns process details.",
-    response_description="Training result with model metadata and process information.",
+    summary="Treinar modelo",
+    description="Treina o modelo usando as atividades persistidas e retorna os detalhes do processo.",
+    response_description="Resultado do treino com metadados do modelo e informações do processo.",
 )
 def train():
     try:
@@ -29,9 +29,9 @@ def train():
 @router.get(
     "/model/status",
     response_model=ModelStatusResponse,
-    summary="Get model status",
-    description="Returns current model status and metrics from the latest training.",
-    response_description="Current model status.",
+    summary="Situação do modelo",
+    description="Retorna a situação atual do modelo e as métricas do último treino.",
+    response_description="Situação atual do modelo.",
 )
 def status():
     try:
@@ -45,8 +45,8 @@ def status():
 
 @router.get(
     "/model/runs",
-    summary="List training runs",
-    description="Returns recent model training snapshots for governance and audit.",
+    summary="Listar treinamentos recentes",
+    description="Retorna os snapshots recentes de treino para governança e auditoria.",
 )
 def list_runs(limit: int = 20):
     try:

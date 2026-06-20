@@ -5,7 +5,7 @@ from app.core.logging import get_logger
 from app.dependencies import ingest_service
 from app.schemas.event_ingest import CanonicalEventBatchIngest, CanonicalEventBatchIngestResponse
 
-router = APIRouter(prefix="/ingest", tags=["ingest"])
+router = APIRouter(prefix="/ingest", tags=["Atividades"])
 logger = get_logger(__name__)
 
 
@@ -13,9 +13,9 @@ logger = get_logger(__name__)
     "/events",
     response_model=CanonicalEventBatchIngestResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Ingest canonical events in batch",
-    description="Receives canonical batch events from any external source.",
-    response_description="Number of successfully saved events.",
+    summary="Ingerir atividades em lote",
+    description="Recebe um lote canônico de atividades a partir de qualquer origem externa.",
+    response_description="Quantidade de atividades salvas com sucesso.",
 )
 def ingest_events(payload: CanonicalEventBatchIngest):
     try:

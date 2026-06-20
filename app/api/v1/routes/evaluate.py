@@ -5,22 +5,22 @@ from app.core.logging import get_logger
 from app.dependencies import evaluation_service
 from app.schemas.evaluate import EvaluateRequest, EvaluateResponse
 
-router = APIRouter(prefix="/evaluate", tags=["evaluation"])
+router = APIRouter(prefix="/evaluate", tags=["Avaliação"])
 logger = get_logger(__name__)
 
 
 @router.post(
     "",
     response_model=EvaluateResponse,
-    summary="Evaluate feature for user",
+    summary="Avaliar regra para usuário",
     description=(
-        "Fast user-level decision endpoint.\n\n"
-        "Evaluates whether a feature should be enabled for a single user.\n"
-        "This endpoint is optimized for low latency and does not train models.\n\n"
-        "- Tries model score when `ml_enabled=true` and model status is `ready`\n"
-        "- Falls back to deterministic rollout when scoring is unavailable"
+        "Endpoint rápido de decisão por usuário.\n\n"
+        "Avalia se uma regra deve ser liberada para um único usuário.\n"
+        "O endpoint é otimizado para baixa latência e não treina modelos.\n\n"
+        "- Tenta usar a pontuação do modelo quando `ml_enabled=true` e a situação do modelo é `ready`\n"
+        "- Cai para liberação gradual determinística quando a pontuação não está disponível"
     ),
-    response_description="Feature evaluation result.",
+    response_description="Resultado da avaliação da regra.",
 )
 def evaluate(request: EvaluateRequest):
     try:

@@ -5,7 +5,7 @@ from app.core.logging import get_logger
 from app.dependencies import event_service
 from app.schemas.event import EventCreate, EventResponse
 
-router = APIRouter(prefix="/events", tags=["events"])
+router = APIRouter(prefix="/events", tags=["Atividades"])
 logger = get_logger(__name__)
 
 
@@ -13,9 +13,9 @@ logger = get_logger(__name__)
     "",
     response_model=EventResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create event",
-    description="Registers a new event for a feature.",
-    response_description="Event created successfully.",
+    summary="Registrar atividade",
+    description="Registra uma atividade individual para uma regra.",
+    response_description="Atividade registrada com sucesso.",
 )
 def create(event: EventCreate):
     try:
@@ -37,14 +37,14 @@ def create(event: EventCreate):
 @router.get(
     "",
     response_model=list[EventResponse],
-    summary="List events",
-    description="Lists events with optional filters for user, feature, and event type.",
-    response_description="Filtered event list.",
+    summary="Listar atividades",
+    description="Lista atividades com filtros opcionais por usuário, regra e identificador da atividade.",
+    response_description="Lista de atividades filtradas.",
 )
 def list(
-    user_id: str | None = Query(default=None, description="Filter by user ID."),
-    feature_key: str | None = Query(default=None, description="Filter by feature key."),
-    event_type: str | None = Query(default=None, description="Filter by event type."),
+    user_id: str | None = Query(default=None, description="Filtrar por usuário."),
+    feature_key: str | None = Query(default=None, description="Filtrar por regra."),
+    event_type: str | None = Query(default=None, description="Filtrar pelo identificador da atividade."),
 ):
     try:
         return event_service.list_events(

@@ -3,14 +3,14 @@ from fastapi import APIRouter, HTTPException, status
 from app.core.logging import get_logger
 from app.dependencies import metrics_sink
 
-router = APIRouter(prefix="/metrics", tags=["observability"])
+router = APIRouter(prefix="/metrics", tags=["Observabilidade"])
 logger = get_logger(__name__)
 
 
 @router.get(
     "",
-    summary="Get in-memory metrics snapshot",
-    description="Returns process-level counters, gauges and timings currently stored in the in-memory metrics sink.",
+    summary="Ver métricas em memória",
+    description="Retorna contadores, gauges e tempos armazenados no coletor de métricas em memória.",
 )
 def get_metrics():
     try:

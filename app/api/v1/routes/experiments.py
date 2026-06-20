@@ -9,7 +9,7 @@ from app.schemas.experiment import (
     ExperimentResponse,
 )
 
-router = APIRouter(prefix="/experiments", tags=["experiments"])
+router = APIRouter(prefix="/experiments", tags=["Testes"])
 logger = get_logger(__name__)
 
 
@@ -17,7 +17,8 @@ logger = get_logger(__name__)
     "",
     response_model=ExperimentResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create A/B-lite experiment",
+    summary="Criar teste",
+    description="Cria um teste A/B-lite associado a uma regra.",
 )
 def create_experiment(payload: ExperimentCreate):
     try:
@@ -32,7 +33,8 @@ def create_experiment(payload: ExperimentCreate):
 @router.get(
     "",
     response_model=list[ExperimentResponse],
-    summary="List experiments",
+    summary="Listar testes",
+    description="Lista os testes cadastrados.",
 )
 def list_experiments():
     try:
@@ -47,7 +49,8 @@ def list_experiments():
 @router.get(
     "/{experiment_id}/result",
     response_model=ExperimentEvaluationResponse,
-    summary="Evaluate A/B-lite experiment",
+    summary="Calcular resultado do teste",
+    description="Calcula o resultado atual de um teste A/B-lite.",
 )
 def evaluate_experiment(experiment_id: int):
     try:

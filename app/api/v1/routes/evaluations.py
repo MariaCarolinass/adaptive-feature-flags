@@ -5,15 +5,15 @@ from app.core.logging import get_logger
 from app.dependencies import evaluation_service
 from app.schemas.evaluate import EvaluationHistoryItem
 
-router = APIRouter(prefix="/evaluations", tags=["evaluation-history"])
+router = APIRouter(prefix="/evaluations", tags=["Histórico de avaliações"])
 logger = get_logger(__name__)
 
 
 @router.get(
     "",
     response_model=list[EvaluationHistoryItem],
-    summary="List recent evaluations",
-    description="Returns the most recent saved feature evaluations from the backend store.",
+    summary="Listar avaliações recentes",
+    description="Retorna as avaliações salvas mais recentes do backend.",
 )
 def list_evaluations(limit: int = Query(default=1000, ge=1, le=1000)):
     try:
@@ -27,8 +27,8 @@ def list_evaluations(limit: int = Query(default=1000, ge=1, le=1000)):
 
 @router.delete(
     "",
-    summary="Clear evaluation history",
-    description="Deletes all stored evaluation history records.",
+    summary="Limpar histórico de avaliações",
+    description="Remove todo o histórico salvo de avaliações.",
 )
 def clear_evaluations():
     try:

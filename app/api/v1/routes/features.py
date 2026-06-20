@@ -5,7 +5,7 @@ from app.core.logging import get_logger
 from app.dependencies import feature_service
 from app.schemas.feature import FeatureCreate, FeatureResponse
 
-router = APIRouter(prefix="/features", tags=["features"])
+router = APIRouter(prefix="/features", tags=["Regras"])
 logger = get_logger(__name__)
 
 
@@ -13,9 +13,9 @@ logger = get_logger(__name__)
     "",
     response_model=FeatureResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create feature",
-    description="Creates a new feature flag.",
-    response_description="Feature created successfully.",
+    summary="Criar regra",
+    description="Cria uma regra com nome, identificador, descrição curta, percentual de liberação e modo de liberação.",
+    response_description="Regra criada com sucesso.",
 )
 def create(request: FeatureCreate):
     try:
@@ -38,9 +38,9 @@ def create(request: FeatureCreate):
 @router.get(
     "/{feature_id}",
     response_model=FeatureResponse,
-    summary="Get feature by ID",
-    description="Returns an existing feature by ID.",
-    response_description="Feature found.",
+    summary="Buscar regra por ID",
+    description="Retorna uma regra existente pelo ID.",
+    response_description="Regra encontrada.",
 )
 def retrieve(feature_id: int):
     try:
@@ -58,9 +58,9 @@ def retrieve(feature_id: int):
 @router.put(
     "/{feature_id}",
     response_model=FeatureResponse,
-    summary="Update feature",
-    description="Updates an existing feature.",
-    response_description="Feature updated.",
+    summary="Atualizar regra",
+    description="Atualiza uma regra existente.",
+    response_description="Regra atualizada.",
 )
 def update(feature_id: int, request: FeatureCreate):
     try:
@@ -85,8 +85,8 @@ def update(feature_id: int, request: FeatureCreate):
 @router.delete(
     "/{feature_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete feature",
-    description="Deletes an existing feature.",
+    summary="Remover regra",
+    description="Remove uma regra existente.",
 )
 def delete(feature_id: int):
     try:
@@ -100,9 +100,9 @@ def delete(feature_id: int):
 @router.get(
     "",
     response_model=list[FeatureResponse],
-    summary="List features",
-    description="Lists all features ordered by creation time.",
-    response_description="Feature list.",
+    summary="Listar regras",
+    description="Lista todas as regras ordenadas por criação.",
+    response_description="Lista de regras.",
 )
 def list():
     try:
