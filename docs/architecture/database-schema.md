@@ -140,7 +140,7 @@ Armazena o catálogo de atividades usadas pela UI, pelos eventos e pelas avalia�
 | --- | --- | --- | --- |
 | `id` | `int` | PK, autoincrement | Identificador interno da atividade |
 | `key` | `string(50)` | não nulo, índice, único | Identificador estável da atividade |
-| `name` | `string(100)` | não nulo | Nome amigável exibido na UI |
+| `name` | `string(100)` | não nulo | Rótulo de exibição |
 | `description` | `string(240)` | opcional | Descrição curta da atividade |
 | `enabled` | `bool` | não nulo | Define se a atividade aparece nas opções ativas |
 | `created_at` | `datetime` | não nulo | Data de criação |
