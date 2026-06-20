@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.routes.features import router as features_router
+from app.api.v1.routes.activities import router as activities_router
 from app.api.v1.routes.events import router as events_router
 from app.api.v1.routes.evaluations import router as evaluations_router
 from app.api.v1.routes.evaluate import router as evaluate_router
@@ -11,6 +12,7 @@ from app.api.v1.routes.experiments import router as experiments_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
+api_router.include_router(activities_router)
 api_router.include_router(features_router)
 api_router.include_router(events_router)
 api_router.include_router(evaluations_router)
