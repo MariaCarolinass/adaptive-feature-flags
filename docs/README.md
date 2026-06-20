@@ -14,6 +14,7 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 - Guia de módulos de suporte (core/integrations/observability/sdk): `implementation/module-guide-core-and-support.md`
 - Operação local e rotina de desenvolvimento: `operations/development-playbook.md`
 - Guia da interface web: `operations/ui-dashboard.md`
+- Vocabulário padrão da interface: `operations/ui-vocabulary.md`
 - Roadmap incremental: `roadmap.md`
 
 ## Estrutura
