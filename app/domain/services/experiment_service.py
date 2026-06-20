@@ -72,11 +72,16 @@ class ExperimentService:
             "A": {"samples": 0, "positives": 0},
             "B": {"samples": 0, "positives": 0},
         }
+        user_stats = {
+            "A": set(),
+            "B": set(),
+        }
         for event in events:
             variant = str(event.properties.get("ab_variant", "")).upper()
             if variant not in ("A", "B"):
                 continue
             variant_stats[variant]["samples"] += 1
+            user_stats[variant].add(event.user_id)
             if event.event_type == experiment.primary_metric_event:
                 variant_stats[variant]["positives"] += 1
 
@@ -99,6 +104,10 @@ class ExperimentService:
             "feature_key": experiment.feature_key,
             "primary_metric_event": experiment.primary_metric_event,
             "variant_stats": variant_stats,
+            "user_stats": {
+                "A": {"users": len(user_stats["A"])},
+                "B": {"users": len(user_stats["B"])},
+            },
             "rate_a": rate_a,
             "rate_b": rate_b,
             "lift_b_vs_a": lift_b_vs_a,
