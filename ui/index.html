@@ -7,32 +7,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/styles.css?v=20260604-dashboard-refine-1" />
+  <link rel="stylesheet" href="./css/styles.css?v=20260619-events-fix-1" />
   <script id="chartJs" src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" async></script>
-  <script src="./js/app.js?v=20260604-dashboard-refine-1" defer></script>
+  <script src="./js/app.js?v=20260619-events-fix-1" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <p class="eyebrow">Adaptive Feature Flags</p>
-        <h1>Workbench</h1>
-        <p class="sidebar-copy">Veja o que está ativo, o que mudou e o que pede atenção.</p>
+        <h1>Adaptive Feature Flags</h1>
       </div>
 
       <nav class="sidebar-nav" aria-label="Navegação principal">
-        <a class="nav-item active" href="#dashboard" data-page="dashboard">Dashboard</a>
+        <a class="nav-item active" href="#dashboard" data-page="dashboard">Painel de trabalho</a>
         <a class="nav-item" href="#features" data-page="features">Regras</a>
         <a class="nav-item" href="#events" data-page="events">Atividades</a>
-        <a class="nav-item" href="#governance" data-page="governance">Treinos</a>
+        <a class="nav-item" href="#governance" data-page="governance">Modelo</a>
         <a class="nav-item" href="#evaluation" data-page="evaluation">Avaliação</a>
+        <a class="nav-item" href="#experiments" data-page="experiments">Testes</a>
         <a class="nav-item" href="#insights" data-page="insights">Insights</a>
-        <a class="nav-item" href="#experiments" data-page="experiments">Experimentos</a>
       </nav>
 
       <div class="sidebar-footer">
         <p class="sidebar-meta-label">Última atualização</p>
-        <p id="overviewSync" class="sidebar-meta">Sincronização pendente</p>
+        <p id="overviewSync" class="sidebar-meta">Aguardando a primeira atualização</p>
       </div>
     </aside>
 
@@ -42,9 +40,9 @@
           <div class="dashboard-stack">
             <section class="hero-band">
               <div class="hero-copy">
-                <p class="panel-kicker">Dashboard</p>
-                <h2>Resumo rápido do sistema</h2>
-                <p>Comece pelos números principais e siga para os itens que precisam de ação.</p>
+                <p class="panel-kicker">Painel de trabalho</p>
+                <h2>Visão geral do sistema</h2>
+                <p>Principais números e alertas em um só lugar.</p>
               </div>
             </section>
 
@@ -52,22 +50,22 @@
               <article class="metric-card">
                 <span>Regras ativas</span>
                 <strong id="overviewFeatures">0</strong>
-                <p>Quantas regras estão disponíveis agora</p>
+                <p>Quantidade de regras disponíveis agora.</p>
               </article>
               <article class="metric-card">
-                <span>Eventos</span>
+                <span>Atividades</span>
                 <strong id="overviewEvents">0</strong>
-                <p>Movimento recente registrado no sistema</p>
+                <p>Movimento recente registrado no sistema.</p>
               </article>
               <article class="metric-card">
-                <span>Status do modelo</span>
+                <span>Situação do modelo</span>
                 <strong id="overviewModel">Sem dados</strong>
-                <p>Se o modelo está pronto para uso</p>
+                <p>Indica se o modelo está pronto para uso.</p>
               </article>
               <article class="metric-card">
-                <span>Experimentos</span>
+                <span>Testes</span>
                 <strong id="overviewExperiments">0</strong>
-                <p>Testes em andamento ou já analisados</p>
+                <p>Testes em andamento ou já analisados.</p>
               </article>
             </section>
 
@@ -76,7 +74,7 @@
                 <div class="panel-head">
                   <div>
                     <p class="panel-kicker">Tendência</p>
-                    <h2>Eventos por dia</h2>
+                    <h2>Atividades por dia</h2>
                   </div>
                 </div>
                 <div class="chart-frame chart-tall">
@@ -98,15 +96,17 @@
                     <thead>
                       <tr>
                         <th>Usuário</th>
-                        <th>Resultado</th>
-                        <th>Origem</th>
-                        <th>Score</th>
-                        <th>Limite</th>
-                        <th>Variação</th>
+                        <th>Atividade da regra</th>
+                        <th>Regra avaliada</th>
+                        <th>Liberação</th>
+                        <th>Como foi decidido</th>
+                        <th>Pontuação da decisão</th>
+                        <th>Pontuação mínima</th>
+                        <th>Variante do teste</th>
                       </tr>
                     </thead>
                     <tbody id="dashboardEvalBody">
-                      <tr><td colspan="6">As avaliações aparecerão aqui após a primeira execução.</td></tr>
+                      <tr><td colspan="8">As avaliações aparecerão aqui após a primeira execução.</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -129,15 +129,15 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Nome</th>
+                      <th>Nome da regra</th>
                       <th>Identificador</th>
-                      <th>Liberação</th>
-                      <th>Decisão inteligente</th>
+                      <th>Percentual de liberação</th>
+                      <th>Modo inteligente</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody id="dashboardFeaturesBody">
-                    <tr><td colspan="5">A lista será carregada automaticamente.</td></tr>
+                    <tr><td colspan="5">As regras carregadas aparecerão aqui.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -155,16 +155,16 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Regra</th>
-                      <th>Eventos</th>
+                      <th>Nome da regra</th>
+                      <th>Atividades</th>
                       <th>Avaliações</th>
-                      <th>Liberação</th>
+                      <th>Percentual de liberação</th>
                       <th>Condição de uso</th>
                       <th>Última ação</th>
                     </tr>
                   </thead>
                   <tbody id="workloadBody">
-                    <tr><td colspan="6">Sem dados suficientes para montar a carga operacional.</td></tr>
+                    <tr><td colspan="6">Ainda não há dados suficientes para mostrar o uso por regra.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -190,7 +190,7 @@
                 <article><span>Taxa de liberação</span><strong id="mRate">0%</strong><p>Quanto passou no teste</p></article>
                 <article><span>Decisões inteligentes</span><strong id="mMl">0</strong><p>Quando o modelo ajudou</p></article>
                 <article><span>Liberação gradual</span><strong id="mRollout">0</strong><p>Quando a regra simples valeu</p></article>
-                <article><span>Base</span><strong id="mEvents">0 / 0</strong><p>Eventos e regras carregados</p></article>
+                <article><span>Base</span><strong id="mEvents">0 / 0</strong><p>Atividades e regras carregadas</p></article>
               </div>
             </section>
 
@@ -221,7 +221,7 @@
             <section class="panel full-span insight-panel">
               <div class="panel-head">
                 <div>
-                  <p class="panel-kicker">Insight</p>
+                  <p class="panel-kicker">Insights</p>
                   <h2>Distribuição e tendência</h2>
                 </div>
               </div>
@@ -239,44 +239,40 @@
             <section class="panel compact-panel experiment-form-panel">
               <div class="panel-head">
                 <div>
-                  <p class="panel-kicker">Experimentos</p>
-                  <h2>Novo experimento</h2>
-                  <p class="panel-note">Crie um teste simples em cima de uma regra existente e acompanhe as variantes A e B.</p>
+                  <p class="panel-kicker">Testes</p>
+                  <h2>Novo teste</h2>
+                  <p class="panel-note">Crie um teste simples para uma regra existente e acompanhe as variantes A e B.</p>
                 </div>
               </div>
 
               <div class="grid2">
                 <div>
-                  <label for="experimentName">Nome</label>
+                  <label for="experimentName">Nome do teste</label>
                   <input id="experimentName" value="Checkout A/B" />
                 </div>
                 <div>
-                  <label for="experimentFeatureKey">Regra</label>
+                  <label for="experimentFeatureKey">Regra avaliada</label>
                   <select id="experimentFeatureKey"></select>
                 </div>
               </div>
 
               <div class="grid2">
                 <div>
-                  <label for="experimentMetricEvent">Métrica principal</label>
-                  <select id="experimentMetricEvent">
-                    <option value="transaction" selected>transaction</option>
-                    <option value="addtocart">addtocart</option>
-                    <option value="used_feature">used_feature</option>
-                    <option value="view">view</option>
-                    <option value="viewed_feature">viewed_feature</option>
+                  <label for="experimentMetricEvent">Evento de sucesso</label>
+                  <select id="experimentMetricEvent" disabled>
+                    <option value="">Carregando atividades...</option>
                   </select>
-                  <p class="field-hint">Evento usado para medir o resultado do teste.</p>
+                  <p class="field-hint">Escolha uma atividade cadastrada para medir se o teste deu resultado.</p>
                 </div>
                 <div>
-                  <label for="experimentMinSamples">Amostras mínimas por variante</label>
+                  <label for="experimentMinSamples">Mínimo por variante</label>
                   <input id="experimentMinSamples" type="number" min="1" value="100" />
                 </div>
               </div>
 
               <div class="grid2 experiment-row">
                 <div class="experiment-lift">
-                  <label for="experimentMinLift">Diferença mínima</label>
+                  <label for="experimentMinLift">Diferença mínima para decidir</label>
                   <input id="experimentMinLift" type="number" lang="en-US" min="0" max="1" step="0.01" value="0.02" />
                   <p class="field-hint">Exibido como percentual, por exemplo 2%.</p>
                 </div>
@@ -286,7 +282,7 @@
               </div>
 
               <div class="actions one experiment-save-action">
-                <button id="createExperimentBtn" type="button">Criar experimento</button>
+                <button id="createExperimentBtn" type="button">Criar teste</button>
               </div>
             </section>
 
@@ -294,26 +290,27 @@
               <div class="panel-head">
                 <div class="panel-head-copy">
                   <p class="panel-kicker">Lista</p>
-                  <h2>Experimentos cadastrados</h2>
+                  <h2>Testes cadastrados</h2>
                   <p class="panel-note">Clique em “Ver resultado” para abrir o resumo do teste.</p>
                 </div>
-                <span class="panel-count" id="experimentsCount">0 experimentos</span>
+                <span class="panel-count" id="experimentsCount">0 testes</span>
               </div>
 
               <div class="table-wrap">
                 <table class="experiments-table">
                   <thead>
                     <tr>
-                      <th>Nome</th>
-                      <th>Regra</th>
-                      <th>Métrica</th>
-                      <th>Configuração</th>
+                      <th>Nome do teste</th>
+                      <th>Regra avaliada</th>
+                      <th>Evento de sucesso</th>
+                      <th>Mínimo por variante</th>
+                      <th>Diferença mínima</th>
                       <th>Status</th>
-                      <th>Ação</th>
+                      <th>Abrir</th>
                     </tr>
                   </thead>
                   <tbody id="experimentsBody">
-                    <tr><td colspan="6">Nenhum experimento cadastrado.</td></tr>
+                    <tr><td colspan="7">Nenhum teste criado ainda.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -323,12 +320,12 @@
               <div class="panel-head">
                 <div>
                   <p class="panel-kicker">Resultado</p>
-                  <h2>Resumo do experimento</h2>
+                  <h2>Resumo do teste</h2>
                 </div>
               </div>
 
               <div id="experimentResultPreview" class="experiment-result-shell">
-                <div class="model-empty">Selecione um experimento para ver o resultado.</div>
+                <div class="model-empty">Selecione um teste para visualizar o resultado.</div>
               </div>
             </section>
           </div>
@@ -346,18 +343,23 @@
 
               <div class="grid2">
                 <div>
-                  <label for="featureName">Nome</label>
+                  <label for="featureName">Nome da regra</label>
                   <input id="featureName" value="New Checkout" />
                 </div>
                 <div>
-                  <label for="featureKey">Identificador</label>
+                  <label for="featureKey">Identificador da regra</label>
                   <input id="featureKey" value="new_checkout" />
                 </div>
               </div>
 
+              <div>
+                <label for="featureDescription">Descrição curta</label>
+                <input id="featureDescription" maxlength="120" placeholder="Explique em uma frase curta para que serve a regra." />
+              </div>
+
               <div class="grid2">
                 <div>
-                  <label for="rollout">Percentual liberado</label>
+                  <label for="rollout">Percentual de liberação</label>
                   <input id="rollout" type="number" min="0" max="100" value="25" />
                 </div>
                 <div class="feature-toggle">
@@ -367,18 +369,18 @@
 
               <div class="grid2 feature-row">
                 <div class="feature-limit">
-                  <label for="thresholdValue">Limite</label>
+                  <label for="thresholdValue">Pontuação mínima</label>
                   <input id="thresholdValue" type="number" min="0" max="1" step="0.01" lang="en-US" value="0.1" />
-                  <p class="field-hint">Usado quando a estratégia é Automática: score maior ou igual ao limite libera a regra.</p>
+                  <p class="field-hint">Na liberação automática, uma pontuação maior ou igual a esse valor libera a regra.</p>
                 </div>
                 <div>
-                  <label for="thresholdMode">Estratégia</label>
+                  <label for="thresholdMode">Modo de liberação</label>
                   <select id="thresholdMode">
-                    <option value="fixed">Manual</option>
-                    <option value="match_rollout">Acompanhar</option>
+                    <option value="fixed">Limite fixo</option>
+                    <option value="match_rollout">Acompanhar cobertura</option>
                     <option value="maximize_f1">Automática</option>
                   </select>
-                  <p class="field-hint">Manual usa o limite fixo. Acompanhar ajusta o corte ao percentual liberado. Automática usa o melhor corte do modelo.</p>
+                  <p class="field-hint">Limite fixo usa um valor definido. Acompanhar cobertura ajusta o limite ao percentual de liberação. Automática escolhe o melhor limite do modelo.</p>
                 </div>
               </div>
 
@@ -393,11 +395,11 @@
                   <p class="panel-kicker">Catálogo</p>
                   <h2>Regras cadastradas</h2>
                 </div>
-                <span id="featuresCount" class="panel-count">Filtrável</span>
+                <span id="featuresCount" class="panel-count">Com filtro</span>
               </div>
 
               <div class="table-toolbar">
-                <input id="featureFilter" placeholder="Filtrar por nome ou identificador" />
+                <input id="featureFilter" placeholder="Filtrar por nome, identificador ou descrição curta" />
               </div>
 
               <div class="table-wrap tall">
@@ -406,14 +408,15 @@
                     <tr>
                       <th>Nome</th>
                       <th>Identificador</th>
-                      <th>Liberação</th>
-                      <th>Estratégia</th>
-                      <th>Limite</th>
+                      <th>Descrição curta</th>
+                      <th>Percentual de liberação</th>
+                      <th>Modo de liberação</th>
+                      <th>Pontuação mínima</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody id="featuresBody">
-                    <tr><td colspan="6">A lista será carregada automaticamente.</td></tr>
+                    <tr><td colspan="7">As regras carregadas aparecerão aqui.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -428,7 +431,7 @@
                 <div class="panel-head-copy">
                   <p class="panel-kicker">Avaliação</p>
                   <h2>Avaliar usuários</h2>
-                  <p class="panel-note">Cole um usuário por linha para ver o resultado logo abaixo.</p>
+                  <p class="panel-note">Cole um usuário por linha e veja o resultado abaixo.</p>
                 </div>
               </div>
 
@@ -437,7 +440,7 @@
 
               <div class="actions two">
                 <button id="simulateBtn" type="button">Avaliar usuários</button>
-                <button id="clearEvaluationsBtn" class="ghost" type="button">Limpar</button>
+                <button id="clearEvaluationsBtn" class="ghost" type="button">Limpar lista</button>
               </div>
             </section>
 
@@ -446,7 +449,7 @@
                 <div class="panel-head-copy">
                   <p class="panel-kicker">Resultados</p>
                   <h2>Avaliações recentes</h2>
-                  <p class="panel-note">A lista mostra o retorno mais novo primeiro.</p>
+                  <p class="panel-note">Cada linha mostra o usuário, a atividade da regra avaliada, a liberação, a pontuação e a variante do teste.</p>
                 </div>
                 <span id="evaluationCount" class="panel-count">0 linhas</span>
               </div>
@@ -456,12 +459,13 @@
                   <thead>
                     <tr>
                       <th>Usuário</th>
-                      <th>Regra</th>
-                      <th>Resultado</th>
-                      <th>Origem da decisão</th>
-                      <th>Score</th>
-                      <th>Limite</th>
-                      <th>Variação</th>
+                      <th>Atividade da regra</th>
+                      <th>Regra avaliada</th>
+                      <th>Liberação</th>
+                      <th>Como foi decidido</th>
+                      <th>Pontuação da decisão</th>
+                      <th>Pontuação mínima</th>
+                      <th>Variante do teste</th>
                     </tr>
                   </thead>
                   <tbody id="evalBody"></tbody>
@@ -476,46 +480,45 @@
             <section class="panel compact-panel events-form-panel">
               <div class="panel-head">
                 <div class="panel-head-copy">
-                  <p class="panel-kicker">Eventos</p>
-                  <h2>Adicionar atividade</h2>
-                  <p class="panel-note">Registre uma ação de usuário ou envie um lote de eventos.</p>
+                  <p class="panel-kicker">Atividades</p>
+                  <h2>Registrar atividade</h2>
+                  <p class="panel-note">Registre uma ação de usuário ou envie um lote de atividades.</p>
                 </div>
               </div>
 
-              <div class="grid3">
+              <div class="grid4">
                 <div>
                   <label for="eventUserId">Usuário</label>
-                  <input id="eventUserId" value="u1001" />
+                  <input id="eventUserId" value="viewed_feature_user_01" />
                 </div>
                 <div>
-                  <label for="eventType">Tipo de atividade</label>
-                  <input id="eventType" value="view" />
+                  <label for="eventActivityKey">Identificador</label>
+                  <input id="eventActivityKey" value="viewed_feature" />
+                </div>
+                <div>
+                  <label for="eventActivityName">Descrição curta</label>
+                  <input id="eventActivityName" maxlength="80" value="Visualizou a funcionalidade" />
                 </div>
                 <div>
                   <label for="eventSource">Origem</label>
                   <select id="eventSource">
-                    <option value="ui_manual" selected>UI manual</option>
-                    <option value="web_app">Web app</option>
-                    <option value="ecommerce_dataset">E-commerce dataset</option>
-                    <option value="datadog">Datadog</option>
+                    <option value="web_app">Aplicação web</option>
+                    <option value="mobile_app">Aplicação mobile</option>
+                    <option value="email_campaign">E-mail marketing</option>
                   </select>
                 </div>
               </div>
 
               <div class="grid4">
                 <div>
-                  <label for="eventFeatureKey">Regra associada</label>
+                  <label for="eventFeatureKey">Regra vinculada</label>
                   <select id="eventFeatureKey">
-                    <option value="">Carregando regras...</option>
+                    <option value="">Carregando opções de regras...</option>
                   </select>
                 </div>
                 <div>
                   <label for="latencyMs">Latência (ms)</label>
                   <input id="latencyMs" type="number" min="0" step="1" value="0" />
-                </div>
-                <div>
-                  <label for="errorRate">Taxa de erro</label>
-                  <input id="errorRate" type="number" min="0" max="1" step="0.01" value="0" />
                 </div>
                 <div class="events-batch-field">
                   <label for="ingestCount">Quantidade em lote</label>
@@ -526,14 +529,15 @@
               <div class="actions one">
                 <button id="sendEventBtn" type="button">Registrar atividade</button>
               </div>
+              <p id="eventActionStatus" class="field-hint event-action-status" aria-live="polite"></p>
             </section>
 
             <section class="panel full-span">
               <div class="panel-head">
                 <div class="panel-head-copy">
                   <p class="panel-kicker">Resultados</p>
-                  <h2>Eventos recentes</h2>
-                  <p class="panel-note">A tabela abaixo mostra o histórico mais recente carregado.</p>
+                  <h2>Atividades recentes</h2>
+                  <p class="panel-note">A tabela abaixo mostra as atividades mais recentes carregadas.</p>
                 </div>
                 <span id="eventsCount" class="panel-count">0 linhas</span>
               </div>
@@ -552,8 +556,9 @@
                     <tr>
                       <th>Data</th>
                       <th>Usuário</th>
-                      <th>Regra</th>
-                      <th>Atividade</th>
+                      <th>Identificador</th>
+                      <th>Descrição curta</th>
+                      <th>Origem</th>
                       <th>Latência</th>
                     </tr>
                   </thead>
@@ -586,7 +591,7 @@
               <div class="panel-head">
                 <div>
                   <p class="panel-kicker">Modelo</p>
-                  <h2>Aprendizado inteligente</h2>
+                  <h2>Treinar modelo</h2>
                 </div>
               </div>
 
@@ -599,11 +604,11 @@
               <div class="panel-head">
                 <div>
                   <p class="panel-kicker">Status</p>
-                  <h2>Modelo em uso</h2>
+                  <h2>Situação do modelo</h2>
                 </div>
               </div>
               <div id="modelStatusPreview" class="model-status">
-                <div class="model-empty">Use as ações desta página para carregar informações do modelo.</div>
+                <div class="model-empty">Use as ações desta página para carregar os detalhes do modelo.</div>
               </div>
             </section>
 
@@ -611,11 +616,11 @@
               <div class="panel-head">
                 <div>
                   <p class="panel-kicker">Histórico</p>
-                  <h2>Treinos recentes</h2>
+                  <h2>Treinamentos recentes</h2>
                 </div>
               </div>
               <div id="modelRunsPreview" class="model-runs">
-                <div class="model-empty">O histórico aparece aqui após o primeiro carregamento.</div>
+                <div class="model-empty">O histórico aparece aqui após o primeiro treinamento.</div>
               </div>
             </section>
           </div>
