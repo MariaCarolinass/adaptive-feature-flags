@@ -4,14 +4,14 @@ from app.core.config import settings
 from app.core.security import create_jwt
 from app.schemas.auth import TokenCreateRequest, TokenCreateResponse
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 @router.post(
     "/token",
     response_model=TokenCreateResponse,
-    summary="Issue JWT access token",
-    description="Issues a bearer token with expiration for API authentication.",
+    summary="Emitir token JWT",
+    description="Emite um token bearer com expiração para autenticação na API.",
 )
 def issue_token(request: TokenCreateRequest):
     if not settings.auth_enabled:
