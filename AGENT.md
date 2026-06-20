@@ -57,7 +57,7 @@ Não criar rota sem suporte real em service/repositório.
 
 ```bash
 source .venv/bin/activate
-pytest
+.venv/bin/pytest
 python3 -m compileall -q app tests
 ```
 
@@ -70,6 +70,8 @@ Sempre que houver mudança funcional:
 - Atualizar `README.md` se afetar uso/setup.
 - Atualizar `.env.example` se configuração mudar.
 - Atualizar `docs/` quando endpoint, fluxo de negócio ou decisão técnica mudar.
+- Atualizar `docs/operations/ui-vocabulary.md` quando mudar texto visível da UI.
+- Atualizar `RELATORIO_ML.md` quando mudar o fluxo de ML, os dados descritos ou os resultados reportados.
 - Registrar decisão relevante em `docs/decisions/` (ADR).
 
 ## 9) Checklist de PR
