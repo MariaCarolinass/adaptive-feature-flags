@@ -1,13 +1,13 @@
 # Código de Conduta
 
-Este projeto adota um padrão objetivo de convivência para manter um ambiente colaborativo, seguro e produtivo.
+Padrão de convivência para manter um ambiente colaborativo, seguro e produtivo.
 
 ## Comportamentos esperados
 
 - Respeito e cordialidade em discussões, reviews e issues.
-- Feedback técnico, claro e focado no problema.
+- Feedback técnico, claro e objetivo.
 - Boa-fé ao reportar bugs, sugerir melhorias e revisar contribuições.
-- Colaboração com foco em aprendizado e evolução do projeto.
+- Colaboração focada no problema e na evolução do projeto.
 
 ## Comportamentos inaceitáveis
 
