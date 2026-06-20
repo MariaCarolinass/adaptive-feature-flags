@@ -30,6 +30,8 @@ class EventService:
         elif "source" in merged_properties and merged_properties["source"] is not None:
             source = str(merged_properties["source"])
 
+        normalized_source = str(source).strip() if source is not None else None
+
         if self.experiment_service is not None:
             context = self.experiment_service.maybe_build_context(
                 feature_key=feature_key,
@@ -40,9 +42,33 @@ class EventService:
                 merged_properties["experiment_id"] = context["experiment_id"]
                 merged_properties["experiment_name"] = context["experiment_name"]
 
+        existing = next(
+            (
+                event
+                for event in self.event_repository.list(
+                    user_id=user_id,
+                    feature_key=feature_key,
+                    event_type=event_type,
+                )
+                if (event.source or None) == normalized_source
+            ),
+            None,
+        )
+        if existing is not None:
+            updated = Event(
+                id=existing.id,
+                source=normalized_source,
+                user_id=user_id,
+                feature_key=feature_key,
+                event_type=event_type,
+                timestamp=timestamp,
+                properties=merged_properties,
+            )
+            return self.event_repository.update(updated)
+
         event = Event(
             id=None,
-            source=source,
+            source=normalized_source,
             user_id=user_id,
             feature_key=feature_key,
             event_type=event_type,
