@@ -7,7 +7,7 @@ Se você identificar uma vulnerabilidade, não publique detalhes de exploração
 Processo recomendado:
 
 1. Abra uma issue com prefixo `[SECURITY]`.
-2. Descreva apenas impacto e contexto em alto nível (sem PoC/exploit).
+2. Descreva apenas impacto e contexto em alto nível, sem PoC ou exploit.
 3. Solicite um canal privado para envio dos detalhes técnicos.
 
 ## O que incluir no reporte
@@ -21,6 +21,7 @@ Processo recomendado:
 
 - Aguarde triagem antes de divulgar publicamente.
 - Não compartilhe credenciais, payloads sensíveis ou dados de usuários.
+- Revogue ou rotacione segredos expostos assim que possível.
 - Coopere com validação e reteste após correção.
 
 ## Medidas de segurança já adotadas
@@ -29,6 +30,7 @@ Processo recomendado:
 - CORS com allowlist configurável (`CORS_ALLOWED_ORIGINS`).
 - Headers de segurança nas respostas.
 - Respostas `500` sanitizadas (sem stack trace para cliente).
+- Autenticação JWT opcional via `AUTH_ENABLED`.
 
 ## Escopo desta política
 
