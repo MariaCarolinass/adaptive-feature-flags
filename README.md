@@ -2,7 +2,7 @@
 
 Adaptive Feature Flags é uma API de feature flags com rollout determinístico e suporte opcional a machine learning para decisão por usuário. O sistema usa uma base Event-Driven em que eventos de uso alimentam o ciclo de decisão e aprendizado, mantendo fallback seguro no MVP e preparando evolução incremental para capacidades mais robustas de experimentação e teste A/B.
 
-<img src="ui/dashboard.gif" alt="Dashboard demo" width="1200"/>
+<img src="ui/dashboard.gif" alt="Dashboard demo" width="900"/>
 
 ## Quickstart
 
