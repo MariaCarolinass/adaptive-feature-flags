@@ -47,6 +47,62 @@
       "ml_threshold_value": 0.1
     }
   ],
+  "activities": [
+    {
+      "key": "view",
+      "name": "Visualização",
+      "description": "Usuário visualizou a página ou funcionalidade.",
+      "enabled": true
+    },
+    {
+      "key": "onboarding_step_shown",
+      "name": "Viu etapa do onboarding",
+      "description": "Etapa do onboarding foi exibida.",
+      "enabled": true
+    },
+    {
+      "key": "empty_state_shown",
+      "name": "Viu estado vazio",
+      "description": "Estado vazio apareceu para o usuário.",
+      "enabled": true
+    },
+    {
+      "key": "profile_setup_shown",
+      "name": "Viu configuração de perfil",
+      "description": "Tela de configuração de perfil foi mostrada.",
+      "enabled": true
+    },
+    {
+      "key": "success_tip_shown",
+      "name": "Viu dica de sucesso",
+      "description": "Dica contextual de sucesso foi exibida.",
+      "enabled": true
+    },
+    {
+      "key": "onboarding_completed",
+      "name": "Onboarding concluído",
+      "description": "Usuário concluiu o onboarding.",
+      "enabled": true
+    },
+    {
+      "key": "first_task_created",
+      "name": "Criou primeira tarefa",
+      "description": "Usuário criou a primeira tarefa.",
+      "enabled": true
+    },
+    {
+      "key": "profile_completed",
+      "name": "Perfil concluído",
+      "description": "Usuário terminou o perfil.",
+      "enabled": true
+    },
+    {
+      "key": "first_success_action_taken",
+      "name": "Primeira ação de sucesso",
+      "description": "Usuário executou a primeira ação de sucesso.",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "segment": "new_user",

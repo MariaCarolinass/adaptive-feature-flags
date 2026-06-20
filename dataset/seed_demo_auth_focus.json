@@ -47,6 +47,86 @@
       "ml_threshold_value": 0.12
     }
   ],
+  "activities": [
+    {
+      "key": "view",
+      "name": "Visualização",
+      "description": "Usuário visualizou a página ou funcionalidade.",
+      "enabled": true
+    },
+    {
+      "key": "magic_link_prompt_shown",
+      "name": "Viu convite do link mágico",
+      "description": "Convite para login sem senha foi exibido.",
+      "enabled": true
+    },
+    {
+      "key": "signup_form_shown",
+      "name": "Viu formulário de cadastro",
+      "description": "Formulário de cadastro foi mostrado.",
+      "enabled": true
+    },
+    {
+      "key": "social_login_prompt_shown",
+      "name": "Viu login social",
+      "description": "Botões de login social apareceram.",
+      "enabled": true
+    },
+    {
+      "key": "password_reset_prompt_shown",
+      "name": "Viu recuperação de senha",
+      "description": "Área de recuperação de senha foi exibida.",
+      "enabled": true
+    },
+    {
+      "key": "magic_link_requested",
+      "name": "Solicitou link mágico",
+      "description": "Usuário pediu um link mágico de acesso.",
+      "enabled": true
+    },
+    {
+      "key": "magic_link_verified",
+      "name": "Validou o link mágico",
+      "description": "Link mágico foi validado com sucesso.",
+      "enabled": true
+    },
+    {
+      "key": "social_login_clicked",
+      "name": "Clicou no login social",
+      "description": "Usuário acionou um provedor social.",
+      "enabled": true
+    },
+    {
+      "key": "login_success",
+      "name": "Entrou com sucesso",
+      "description": "Login foi concluído com sucesso.",
+      "enabled": true
+    },
+    {
+      "key": "signup_form_submitted",
+      "name": "Enviou cadastro",
+      "description": "Formulário de cadastro foi enviado.",
+      "enabled": true
+    },
+    {
+      "key": "signup_completed",
+      "name": "Cadastro concluído",
+      "description": "Cadastro da conta foi finalizado.",
+      "enabled": true
+    },
+    {
+      "key": "password_reset_requested",
+      "name": "Solicitou redefinição",
+      "description": "Usuário pediu redefinição de senha.",
+      "enabled": true
+    },
+    {
+      "key": "password_reset_completed",
+      "name": "Redefinição concluída",
+      "description": "Senha foi redefinida com sucesso.",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "segment": "new_visitor",

@@ -57,6 +57,74 @@
       "ml_threshold_value": 0.16
     }
   ],
+  "activities": [
+    {
+      "key": "view",
+      "name": "Visualização",
+      "description": "Usuário visualizou a página ou funcionalidade.",
+      "enabled": true
+    },
+    {
+      "key": "homepage_hero_seen",
+      "name": "Viu hero da página inicial",
+      "description": "Hero principal da página inicial foi exibido.",
+      "enabled": true
+    },
+    {
+      "key": "search_suggestions_shown",
+      "name": "Viu sugestões de busca",
+      "description": "Sugestões de busca apareceram no campo.",
+      "enabled": true
+    },
+    {
+      "key": "pricing_tooltip_shown",
+      "name": "Viu dica de preço",
+      "description": "Dica com comparativo de preço foi exibida.",
+      "enabled": true
+    },
+    {
+      "key": "retention_banner_shown",
+      "name": "Viu banner de retenção",
+      "description": "Banner de retenção foi exibido.",
+      "enabled": true
+    },
+    {
+      "key": "community_invite_shown",
+      "name": "Viu convite da comunidade",
+      "description": "Convite para comunidade foi exibido.",
+      "enabled": true
+    },
+    {
+      "key": "hero_cta_clicked",
+      "name": "Clicou no CTA do hero",
+      "description": "Usuário clicou no CTA principal.",
+      "enabled": true
+    },
+    {
+      "key": "search_suggestion_selected",
+      "name": "Selecionou sugestão de busca",
+      "description": "Sugestão de busca foi selecionada.",
+      "enabled": true
+    },
+    {
+      "key": "pricing_details_opened",
+      "name": "Abriu detalhes de preço",
+      "description": "Detalhes de preço foram abertos.",
+      "enabled": true
+    },
+    {
+      "key": "retention_banner_clicked",
+      "name": "Clicou no banner de retenção",
+      "description": "Banner de retenção recebeu clique.",
+      "enabled": true
+    },
+    {
+      "key": "community_invite_clicked",
+      "name": "Clicou no convite da comunidade",
+      "description": "Convite para comunidade recebeu clique.",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "segment": "new_visitor",

@@ -47,6 +47,74 @@
       "ml_threshold_value": 0.1
     }
   ],
+  "activities": [
+    {
+      "key": "view",
+      "name": "Visualização",
+      "description": "Usuário visualizou a página ou funcionalidade.",
+      "enabled": true
+    },
+    {
+      "key": "checkout_upsell_shown",
+      "name": "Viu oferta no checkout",
+      "description": "Oferta incremental exibida no checkout.",
+      "enabled": true
+    },
+    {
+      "key": "pricing_tooltip_shown",
+      "name": "Viu dica de preço",
+      "description": "Dica com comparativo de preço foi exibida.",
+      "enabled": true
+    },
+    {
+      "key": "upgrade_prompt_shown",
+      "name": "Viu convite de upgrade",
+      "description": "Convite de upgrade apareceu para o usuário.",
+      "enabled": true
+    },
+    {
+      "key": "cart_reminder_shown",
+      "name": "Viu lembrete do carrinho",
+      "description": "Lembrete de carrinho foi exibido.",
+      "enabled": true
+    },
+    {
+      "key": "checkout_upsell_clicked",
+      "name": "Clicou na oferta do checkout",
+      "description": "Usuário abriu a oferta incremental do checkout.",
+      "enabled": true
+    },
+    {
+      "key": "pricing_details_opened",
+      "name": "Abriu detalhes de preço",
+      "description": "Usuário abriu os detalhes do preço.",
+      "enabled": true
+    },
+    {
+      "key": "upgrade_cta_clicked",
+      "name": "Clicou no upgrade",
+      "description": "Usuário clicou no botão de upgrade.",
+      "enabled": true
+    },
+    {
+      "key": "cart_reminder_clicked",
+      "name": "Clicou no lembrete do carrinho",
+      "description": "Usuário acionou o lembrete do carrinho.",
+      "enabled": true
+    },
+    {
+      "key": "purchase_completed",
+      "name": "Compra concluída",
+      "description": "Compra finalizada com sucesso.",
+      "enabled": true
+    },
+    {
+      "key": "subscription_upgraded",
+      "name": "Plano atualizado",
+      "description": "Usuário concluiu upgrade de assinatura.",
+      "enabled": true
+    }
+  ],
   "profiles": [
     {
       "segment": "ready_to_buy",
