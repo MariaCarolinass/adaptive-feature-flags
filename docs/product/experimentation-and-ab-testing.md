@@ -23,6 +23,22 @@ No contexto deste projeto, eventos são a base para ambos:
 - Tomada de decisão operacional (habilitar ou não feature por usuário).
 - Geração de evidências para experimentação e recomendação de rollout.
 
+## Por que comparar A/B
+
+A comparação A/B é útil porque transforma opinião em evidência prática.
+
+- Mostra se uma variante realmente melhora a métrica escolhida.
+- Reduz o risco de liberar uma mudança pior para toda a base.
+- Ajuda a decidir com dados antes de escalar.
+- Permite entender se a nova experiência funciona melhor do que a atual.
+
+No produto, isso faz sentido porque:
+
+- a decisão é por usuário e por regra;
+- a variante é estável;
+- a atividade de sucesso é definida;
+- a decisão final só sai quando há volume suficiente.
+
 ## O que o MVP já oferece para experimentação
 
 - Rollout determinístico por percentual.
