@@ -30,7 +30,7 @@ Com a API rodando:
 
 3. **Regras**
 - Cria e atualiza regras de liberação.
-- Configura percentual liberado, estratégia inteligente, sensibilidade e status da regra.
+- Configura percentual de liberação, pontuação mínima, modo de liberação e status da regra.
 - Mostra regras cadastradas em uma tabela filtrável.
 
 4. **Avaliação**
