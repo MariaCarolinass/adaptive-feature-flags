@@ -11,6 +11,8 @@ erDiagram
     FEATURES ||--o{ EVENTS : "feature_key"
     FEATURES ||--o{ EVALUATIONS : "feature_key"
     FEATURES ||--o{ EXPERIMENTS : "feature_key"
+    ACTIVITIES ||--o{ EVENTS : "event_type"
+    ACTIVITIES ||--o{ EVALUATIONS : "activity"
 
     FEATURES {
         int id PK
@@ -26,12 +28,23 @@ erDiagram
         datetime updated_at
     }
 
+    ACTIVITIES {
+        int id PK
+        string key UK
+        string name
+        string description
+        bool enabled
+        datetime created_at
+        datetime updated_at
+    }
+
     EVENTS {
         int id PK
         string user_id
         string feature_key
         string event_type
         datetime timestamp
+        datetime updated_at
         json properties
     }
 
@@ -39,6 +52,7 @@ erDiagram
         int id PK
         string feature_key
         string user_id
+        string activity
         bool enabled
         string decision_source
         float score
@@ -113,11 +127,26 @@ Armazena os eventos canônicos coletados da plataforma e da ingestão em lote.
 | `id` | `int` | PK, autoincrement | Identificador interno do evento |
 | `user_id` | `string(100)` | não nulo, índice | Identifica o usuário dono do evento |
 | `feature_key` | `string(50)` | não nulo, índice | Relaciona o evento à feature ou contexto |
-| `event_type` | `string(50)` | não nulo, índice | Tipo do evento observado |
+| `event_type` | `string(50)` | não nulo, índice | Identificador da atividade observada |
 | `timestamp` | `datetime` | não nulo, índice | Momento do evento |
+| `updated_at` | `datetime` | opcional, índice | Momento da última atualização do evento |
 | `properties` | `json` | não nulo | Metadados contextuais do evento |
 
-### 3. `evaluations`
+### 3. `activities`
+
+Armazena o catálogo de atividades usadas pela UI, pelos eventos e pelas avaliações.
+
+| Atributo | Tipo | Restrições | Finalidade |
+| --- | --- | --- | --- |
+| `id` | `int` | PK, autoincrement | Identificador interno da atividade |
+| `key` | `string(50)` | não nulo, índice, único | Identificador estável da atividade |
+| `name` | `string(100)` | não nulo | Nome amigável exibido na UI |
+| `description` | `string(240)` | opcional | Descrição curta da atividade |
+| `enabled` | `bool` | não nulo | Define se a atividade aparece nas opções ativas |
+| `created_at` | `datetime` | não nulo | Data de criação |
+| `updated_at` | `datetime` | não nulo | Data da última atualização |
+
+### 4. `evaluations`
 
 Registra o histórico de decisões produzidas pelo endpoint `/evaluate`.
 
@@ -126,6 +155,7 @@ Registra o histórico de decisões produzidas pelo endpoint `/evaluate`.
 | `id` | `int` | PK, autoincrement | Identificador da decisão |
 | `feature_key` | `string(50)` | não nulo, índice | Feature avaliada |
 | `user_id` | `string(100)` | não nulo, índice | Usuário avaliado |
+| `activity` | `string(50)` | opcional, índice | Identificador da atividade mais recente associada à avaliação |
 | `enabled` | `bool` | não nulo | Resultado final da decisão |
 | `decision_source` | `string(50)` | não nulo, índice | Origem da decisão (`ml`, `rollout`, etc.) |
 | `score` | `float` | opcional | Score do modelo quando disponível |
@@ -135,7 +165,7 @@ Registra o histórico de decisões produzidas pelo endpoint `/evaluate`.
 | `model_version` | `string(50)` | opcional | Versão do modelo usado |
 | `created_at` | `datetime` | não nulo, índice | Momento em que a decisão foi registrada |
 
-### 4. `model_metadata`
+### 5. `model_metadata`
 
 Armazena o estado atual do modelo treinado e seus metadados principais.
 
@@ -149,7 +179,7 @@ Armazena o estado atual do modelo treinado e seus metadados principais.
 | `metrics` | `json` | opcional | Métricas do treino atual |
 | `artifact_path` | `string(500)` | opcional | Caminho do artefato `.joblib` |
 
-### 5. `model_training_runs`
+### 6. `model_training_runs`
 
 Guarda o histórico de execuções de treino para governança e auditoria.
 
@@ -162,7 +192,7 @@ Guarda o histórico de execuções de treino para governança e auditoria.
 | `duration_ms` | `int` | opcional | Tempo total do treino |
 | `snapshot` | `json` | não nulo | Resumo completo da execução |
 
-### 6. `experiments`
+### 7. `experiments`
 
 Registra experimentos A/B-lite associados a uma feature.
 
@@ -183,6 +213,7 @@ Registra experimentos A/B-lite associados a uma feature.
 As relações abaixo não são foreign keys formais no SQLite, mas representam como o sistema usa os dados:
 
 - `features.key` se relaciona com `events.feature_key`, `evaluations.feature_key` e `experiments.feature_key`;
+- `activities.key` se relaciona logicamente com `events.event_type` e `evaluations.activity`;
 - `events.user_id` e `evaluations.user_id` permitem agregação e rastreamento por usuário;
 - `model_metadata` e `model_training_runs` representam governança do ciclo de treino;
 - `experiments` usa a telemetria de `events` para calcular `ab_variant`, taxa de sucesso e lift.
@@ -192,7 +223,8 @@ As relações abaixo não são foreign keys formais no SQLite, mas representam c
 Se o objetivo for entender rapidamente o banco do projeto, a sequência mais útil é:
 
 1. `features` define o que pode ser ativado.
-2. `events` registra o comportamento dos usuários.
-3. `model_metadata` e `model_training_runs` guardam o estado do ML.
-4. `evaluations` registra cada decisão individual.
-5. `experiments` complementa o sistema com A/B-lite.
+2. `activities` define os eventos legíveis pela UI e pelo catálogo.
+3. `events` registra o comportamento dos usuários.
+4. `model_metadata` e `model_training_runs` guardam o estado do ML.
+5. `evaluations` registra cada decisão individual.
+6. `experiments` complementa o sistema com A/B-lite.
