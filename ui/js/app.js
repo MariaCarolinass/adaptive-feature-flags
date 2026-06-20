@@ -1082,6 +1082,7 @@ function buildTimeline() {
 function drawCharts() {
   if (typeof Chart === "undefined") return;
   const palette = { blue: "#0d67e8", green: "#0f8a52", red: "#cb3748", amber: "#b07a19", gray: "#72839f" };
+  const isCompactViewport = window.matchMedia("(max-width: 720px)").matches;
   const m = metricsFromEvaluations();
 
   if (state.charts.release) state.charts.release.destroy();
@@ -1095,8 +1096,13 @@ function drawCharts() {
       layout: { padding: 0 },
       plugins: {
         legend: {
-          position: "right",
-          labels: { usePointStyle: true, boxWidth: 10, boxHeight: 10, font: { size: 12, weight: "600" } },
+          position: isCompactViewport ? "bottom" : "right",
+          labels: {
+            usePointStyle: true,
+            boxWidth: 10,
+            boxHeight: 10,
+            font: { size: isCompactViewport ? 11 : 12, weight: "600" },
+          },
         },
       },
     },
