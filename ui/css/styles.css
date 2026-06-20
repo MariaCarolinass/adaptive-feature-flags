@@ -405,7 +405,7 @@ textarea {
 .dashboard-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: stretch;
 }
 
@@ -547,7 +547,7 @@ h2 {
 }
 
 .table-wrap.compact {
-  max-height: 320px;
+  max-height: 400px;
 }
 
 .table-wrap.tall {
@@ -717,6 +717,10 @@ tbody tr:hover {
   grid-template-columns: 1fr;
 }
 
+.events-page-grid {
+  grid-template-columns: 1fr;
+}
+
 .experiments-page-grid {
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
 }
@@ -733,11 +737,19 @@ tbody tr:hover {
   padding: 12px;
 }
 
+.activity-form-panel {
+  padding: 12px;
+}
+
 .experiment-form-panel {
   padding: 12px;
 }
 
 .feature-form-panel .panel-head {
+  margin-bottom: 10px;
+}
+
+.activity-form-panel .panel-head {
   margin-bottom: 10px;
 }
 
@@ -761,11 +773,20 @@ tbody tr:hover {
   margin-bottom: 12px;
 }
 
+.activity-form-panel .grid2 {
+  margin-bottom: 12px;
+}
+
 .experiment-form-panel .grid2 {
   margin-bottom: 12px;
 }
 
 .feature-form-panel .feature-row {
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.activity-form-panel .activity-row {
   align-items: start;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
@@ -831,6 +852,22 @@ tbody tr:hover {
   font-weight: 700;
 }
 
+.activity-form-panel .toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 38px;
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid rgba(22, 38, 61, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .experiment-form-panel .toggle-switch {
   display: flex;
   align-items: center;
@@ -851,11 +888,20 @@ tbody tr:hover {
   margin: 0;
 }
 
+.activity-form-panel .toggle-switch input {
+  margin: 0;
+}
+
 .experiment-form-panel .toggle-switch input {
   margin: 0;
 }
 
 .feature-form-panel label {
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.activity-form-panel label {
   margin-top: 6px;
   margin-bottom: 4px;
 }
@@ -871,6 +917,12 @@ tbody tr:hover {
   padding-bottom: 9px;
 }
 
+.activity-form-panel input,
+.activity-form-panel select {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
 .experiment-form-panel input,
 .experiment-form-panel select {
   padding-top: 9px;
@@ -878,6 +930,13 @@ tbody tr:hover {
 }
 
 .feature-form-panel .field-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.activity-form-panel .field-hint {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 12px;
@@ -896,6 +955,11 @@ tbody tr:hover {
   width: 100%;
 }
 
+.activity-save-action {
+  margin-top: 10px;
+  width: 100%;
+}
+
 .experiment-save-action {
   margin-top: 10px;
   width: 100%;
@@ -907,6 +971,93 @@ tbody tr:hover {
   max-width: none;
   font-size: 14px;
   letter-spacing: 0.01em;
+}
+
+.activity-save-action button {
+  display: block;
+  width: 100%;
+  max-width: none;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+
+.event-action-status {
+  margin-top: 10px;
+}
+
+.event-action-status[data-tone="ok"] {
+  color: var(--success, #0f8a52);
+}
+
+.event-action-status[data-tone="bad"] {
+  color: var(--danger, #cb3748);
+}
+
+.activity-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.activity-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.activity-empty,
+.activity-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(22, 38, 61, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.activity-empty {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  border-style: dashed;
+  background: rgba(250, 252, 255, 0.92);
+}
+
+.activity-item {
+  display: grid;
+  gap: 8px;
+}
+
+.activity-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.activity-item-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.activity-item-title strong {
+  color: var(--primary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.activity-item-title small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.activity-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .experiment-save-action button {
@@ -1042,6 +1193,47 @@ tbody tr:hover {
   background: rgba(255, 255, 255, 0.94);
 }
 
+.experiment-user-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.experiment-user-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(22, 38, 61, 0.06);
+  border-radius: 14px;
+  background: rgba(250, 252, 255, 0.95);
+}
+
+.experiment-user-card strong {
+  color: var(--primary);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.experiment-user-grid .experiment-user-card:nth-child(2) strong {
+  color: var(--primary-2);
+}
+
+.experiment-user-card span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.experiment-user-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .experiment-result-main {
   display: grid;
   gap: 8px;
@@ -1061,6 +1253,13 @@ tbody tr:hover {
 
 .experiment-result-title span {
   color: var(--primary-2);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.experiment-result-summary-note {
+  margin: 0;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -1626,8 +1825,8 @@ label {
   color: var(--accent-violet);
 }
 
-#featuresBody td:nth-child(3),
-#featuresBody td:nth-child(5) {
+#featuresBody td:nth-child(4),
+#featuresBody td:nth-child(6) {
   color: var(--primary);
   font-family: "IBM Plex Mono", monospace;
   font-weight: 700;
@@ -1637,13 +1836,19 @@ label {
 #evalBody td:nth-child(4),
 #evalBody td:nth-child(5),
 #evalBody td:nth-child(6),
-#eventsBody td:nth-child(5) {
+#eventsBody td:nth-child(3),
+#eventsBody td:nth-child(5),
+#eventsBody td:nth-child(6) {
   color: var(--primary);
   font-family: "IBM Plex Mono", monospace;
   font-weight: 700;
 }
 
-#eventsBody td:nth-child(4) {
+#eventsBody td:nth-child(3) {
+  color: var(--accent-violet);
+}
+
+#eventsBody td:nth-child(5) {
   color: var(--primary-2);
   font-family: "IBM Plex Mono", monospace;
   font-weight: 700;
@@ -1655,7 +1860,7 @@ label {
   font-weight: 700;
 }
 
-#featuresBody td:nth-child(4) {
+#featuresBody td:nth-child(5) {
   white-space: nowrap;
 }
 
@@ -1718,6 +1923,25 @@ label {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.35;
+}
+
+.activity-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.activity-cell strong {
+  color: var(--text);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.event-identifier {
+  color: var(--accent-violet);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
 }
 
 .pill {
@@ -1793,6 +2017,7 @@ label {
   .chart-grid,
   .form-grid,
   .governance-grid,
+  .events-page-grid,
   .experiments-page-grid,
   .metrics-grid,
   .compare-strip {
@@ -1816,6 +2041,10 @@ label {
   }
 
   .events-page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-form-panel .activity-row {
     grid-template-columns: 1fr;
   }
 
