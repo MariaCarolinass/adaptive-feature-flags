@@ -26,6 +26,7 @@ Exemplo de resposta com machine learning:
 {
   "feature_key": "new_checkout",
   "user_id": "user_123",
+  "activity": "viewed_feature",
   "enabled": true,
   "decision_source": "ml",
   "score": 0.42,
@@ -52,6 +53,7 @@ Exemplo de resposta com fallback:
 {
   "feature_key": "new_checkout",
   "user_id": "user_123",
+  "activity": "viewed_feature",
   "enabled": false,
   "decision_source": "rollout",
   "score": null,
@@ -65,6 +67,9 @@ Valores possíveis de `decision_source`:
 - `feature_disabled`
 - `ml`
 - `rollout`
+
+`activity` indica a atividade mais recente do usuário para a regra avaliada.
+Quando não houver evento compatível, o campo pode vir `null`.
 
 ## `GET /evaluations`
 
@@ -83,6 +88,7 @@ Exemplo de resposta:
     "created_at": "2026-06-04T14:19:00+00:00",
     "feature_key": "new_checkout",
     "user_id": "user_123",
+    "activity": "viewed_feature",
     "enabled": true,
     "decision_source": "ml",
     "score": 0.81,
