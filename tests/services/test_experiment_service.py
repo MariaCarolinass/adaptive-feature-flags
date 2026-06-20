@@ -84,3 +84,5 @@ def test_evaluate_experiment_returns_stop_when_lift_and_sample_thresholds_are_me
     result = service.evaluate_experiment(created.id or 0)
     assert result is not None
     assert result["decision"] == "stop_promote_b"
+    assert result["user_stats"]["A"]["users"] == 2
+    assert result["user_stats"]["B"]["users"] == 2
