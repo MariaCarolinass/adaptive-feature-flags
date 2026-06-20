@@ -1,0 +1,37 @@
+app = "adaptive-feature-flags"
+primary_region = "gru"
+
+[env]
+  ENVIRONMENT = "production"
+  DATABASE_URL = "sqlite:////data/db.sqlite3"
+  MODELS_DIR = "/data/models"
+  TRUSTED_HOSTS = "[\"adaptive-feature-flags.fly.dev\",\"*.fly.dev\",\"localhost\",\"127.0.0.1\",\"testserver\"]"
+  CORS_ALLOWED_ORIGINS = "[\"https://adaptive-feature-flags.fly.dev\"]"
+
+[processes]
+  app = "uvicorn app.main:app --host 0.0.0.0 --port 8080"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+  processes = ["app"]
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[mounts]]
+  source = "app_data"
+  destination = "/data"
