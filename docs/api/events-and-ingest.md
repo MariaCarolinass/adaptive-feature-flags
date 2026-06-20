@@ -11,9 +11,10 @@ Request:
   "source": "web_app",
   "user_id": "user_123",
   "feature_key": "new_checkout",
-  "event_type": "view",
+  "event_type": "viewed_feature",
   "timestamp": "2026-05-23T12:00:00Z",
   "properties": {
+    "activity_name": "Visualizou a funcionalidade",
     "page": "checkout"
   }
 }
@@ -25,7 +26,7 @@ Lista eventos com filtros opcionais:
 
 - `user_id`
 - `feature_key`
-- `event_type`
+- `event_type` - identificador técnico da atividade
 
 ## `POST /ingest/events`
 
@@ -40,9 +41,10 @@ Request:
     {
       "user_id": "user_123",
       "feature_key": "new_checkout",
-      "event_type": "view",
+      "event_type": "viewed_feature",
       "timestamp": "2026-05-23T12:00:00Z",
       "properties": {
+        "activity_name": "Visualizou a funcionalidade",
         "page": "checkout"
       }
     },
@@ -52,12 +54,18 @@ Request:
       "event_type": "addtocart",
       "timestamp": "2026-05-23T12:01:10Z",
       "properties": {
+        "activity_name": "Adicionou ao carrinho",
         "platform": "ios"
       }
     }
   ]
 }
 ```
+
+Observação:
+
+- `event_type` guarda o identificador técnico da atividade.
+- O rótulo de exibição pode ser salvo em `properties.activity_name`.
 
 Response `201`:
 
