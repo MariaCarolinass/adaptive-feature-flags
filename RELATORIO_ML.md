@@ -25,6 +25,8 @@ A base do projeto é formada por eventos canonicamente estruturados com os campo
 | `timestamp` | permite ordenar os eventos no tempo e medir recência, frequência e janelas de atividade |
 | `properties` | armazena metadados contextuais, como segmento, dispositivo, jornada, variante ou métricas operacionais |
 
+Além do fluxo de eventos, o sistema mantém um catálogo de atividades para separar identificadores técnicos (`key`) de rótulos de apresentação (`name`) e descrições curtas (`description`). Esse catálogo é usado na interface, na ingestão e na leitura das avaliações recentes.
+
 O projeto também utiliza catálogos JSON para gerar dados sintéticos mais realistas por contexto, como checkout e conversão, growth e descoberta, ativação e onboarding, retenção e hábito, e autenticação e cadastro.
 
 Exemplo simplificado de catálogo JSON:
@@ -78,6 +80,8 @@ Exemplo de evento canônico persistido:
 ```
 
 Esse tipo de registro alimenta o `FeatureBuilder`, que agrega os sinais por usuário para compor o dataset supervisionado do treino. Os catálogos permitem carregar usuários e eventos coerentes para a interface, para o treino e para a avaliação do modelo, preservando consistência entre a narrativa de produto e o comportamento observado.
+
+O histórico de avaliações também registra a atividade mais recente associada à decisão, o que facilita leitura e auditoria do resultado produzido pelo sistema.
 
 **Descrição dos objetivos.**  
 Os objetivos principais são:
