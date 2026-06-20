@@ -13,8 +13,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.domain.services.event_service import EventService
+from app.domain.services.activity_service import ActivityService
 from app.domain.services.feature_service import FeatureService
 from app.infrastructure.db.db import SessionLocal, init_db
+from app.infrastructure.repositories.sqlite_activity_repository import SqliteActivityRepository
 from app.infrastructure.repositories.sqlite_event_repository import SqliteEventRepository
 from app.infrastructure.repositories.sqlite_feature_repository import SqliteFeatureRepository
 
@@ -32,6 +34,14 @@ class FeatureSpec:
     ml_enabled: bool
     ml_threshold_mode: str = "fixed"
     ml_threshold_value: float = 0.1
+
+
+@dataclass(slots=True)
+class ActivitySpec:
+    key: str
+    name: str
+    description: str | None
+    enabled: bool = True
 
 
 @dataclass(slots=True)
@@ -60,6 +70,7 @@ class SeedCatalog:
     seed_window_days: int
     random_seed: int
     features: list[FeatureSpec]
+    activities: list[ActivitySpec]
     profiles: list[ProfileSpec]
     journeys: dict[str, dict[str, str]]
 
@@ -82,6 +93,7 @@ def _load_seed_catalog(path: Path) -> SeedCatalog:
         seed_window_days=int(raw["seed_window_days"]),
         random_seed=int(raw["random_seed"]),
         features=[FeatureSpec(**item) for item in raw["features"]],
+        activities=[ActivitySpec(**item) for item in raw.get("activities", [])],
         profiles=[ProfileSpec(**item) for item in raw["profiles"]],
         journeys={key: dict(value) for key, value in raw["journeys"].items()},
     )
@@ -130,6 +142,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def _build_feature_service() -> tuple[FeatureService, SqliteFeatureRepository]:
     repository = SqliteFeatureRepository(SessionLocal)
     return FeatureService(repository), repository
+
+
+def _build_activity_service() -> tuple[ActivityService, SqliteActivityRepository]:
+    repository = SqliteActivityRepository(SessionLocal)
+    return ActivityService(repository), repository
 
 
 def _build_event_service() -> EventService:
@@ -187,6 +204,90 @@ def seed_features(
                 ml_enabled=spec.ml_enabled,
                 ml_threshold_mode=spec.ml_threshold_mode,
                 ml_threshold_value=spec.ml_threshold_value,
+            )
+            updated += 1
+        else:
+            unchanged += 1
+
+    return created, updated, unchanged
+
+
+def _activity_needs_refresh(existing, spec: ActivitySpec) -> bool:
+    return any(
+        [
+            existing.name != spec.name,
+            existing.description != spec.description,
+            existing.enabled != spec.enabled,
+        ]
+    )
+
+
+def _default_activity_specs(catalog: SeedCatalog) -> list[ActivitySpec]:
+    seen: set[str] = set()
+    specs: list[ActivitySpec] = []
+
+    for journey in catalog.journeys.values():
+        for key in (
+            journey.get("exposure_event"),
+            journey.get("positive_event"),
+            journey.get("conversion_event"),
+        ):
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            specs.append(
+                ActivitySpec(
+                    key=key,
+                    name=key.replace("_", " ").strip().title(),
+                    description=None,
+                    enabled=True,
+                )
+            )
+
+    if "view" not in seen:
+        specs.insert(
+            0,
+            ActivitySpec(
+                key="view",
+                name="Visualização",
+                description="Usuário visualizou a página ou funcionalidade.",
+                enabled=True,
+            ),
+        )
+
+    return specs
+
+
+def seed_activities(
+    catalog: SeedCatalog,
+    activity_service: ActivityService,
+    activity_repository: SqliteActivityRepository,
+) -> tuple[int, int, int]:
+    created = 0
+    updated = 0
+    unchanged = 0
+
+    specs = catalog.activities or _default_activity_specs(catalog)
+
+    for spec in specs:
+        existing = activity_repository.get_by_key(spec.key)
+        if existing is None:
+            activity_service.create_activity(
+                key=spec.key,
+                name=spec.name,
+                description=spec.description,
+                enabled=spec.enabled,
+            )
+            created += 1
+            continue
+
+        if _activity_needs_refresh(existing, spec):
+            activity_service.update_activity(
+                activity_id=existing.id,
+                key=spec.key,
+                name=spec.name,
+                description=spec.description,
+                enabled=spec.enabled,
             )
             updated += 1
         else:
@@ -484,6 +585,7 @@ def main(argv: list[str] | None = None) -> None:
     init_db()
 
     feature_service, feature_repository = _build_feature_service()
+    activity_service, activity_repository = _build_activity_service()
     event_service = _build_event_service()
 
     catalog_path = Path(args.catalog) if args.catalog else None
@@ -493,16 +595,27 @@ def main(argv: list[str] | None = None) -> None:
     created_features = 0
     updated_features = 0
     unchanged_features = 0
+    created_activities = 0
+    updated_activities = 0
+    unchanged_activities = 0
     created_events = 0
     skipped_events = 0
 
     for catalog in catalogs:
+        current_created_activities, current_updated_activities, current_unchanged_activities = seed_activities(
+            catalog,
+            activity_service,
+            activity_repository,
+        )
         current_created_features, current_updated_features, current_unchanged_features = seed_features(
             catalog,
             feature_service,
             feature_repository,
         )
         current_created_events, current_skipped_events = seed_events(catalog, event_service)
+        created_activities += current_created_activities
+        updated_activities += current_updated_activities
+        unchanged_activities += current_unchanged_activities
         created_features += current_created_features
         updated_features += current_updated_features
         unchanged_features += current_unchanged_features
@@ -511,6 +624,9 @@ def main(argv: list[str] | None = None) -> None:
         print(f"Catálogo importado: {catalog.catalog_name}")
 
     print("Seed demo concluído.")
+    print(f"Activities criadas: {created_activities}")
+    print(f"Activities atualizadas: {updated_activities}")
+    print(f"Activities já consistentes: {unchanged_activities}")
     print(f"Features criadas: {created_features}")
     print(f"Features atualizadas: {updated_features}")
     print(f"Features já consistentes: {unchanged_features}")
