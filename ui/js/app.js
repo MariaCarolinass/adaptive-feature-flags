@@ -7,19 +7,20 @@ const setText = (id, value) => {
 
 const state = {
   page: localStorage.getItem("adaptiveFlags.page") || "dashboard",
+  activities: [],
   features: [],
   evaluations: [],
   events: [],
   experiments: [],
   selectedExperimentId: Number(localStorage.getItem("adaptiveFlags.experimentId")) || null,
   experimentResult: null,
-  experimentResultMessage: "Selecione um experimento para ver o resultado.",
+  experimentResultMessage: "Selecione um teste para visualizar o resultado.",
   modelRuns: [],
   experimentsCount: 0,
   modelStatus: null,
-  modelStatusMessage: "Use as ações desta página para carregar informações do modelo.",
+  modelStatusMessage: "Use as ações desta página para carregar os detalhes do modelo.",
   lastSyncAt: null,
-  lastStatusPayload: "Nenhum detalhe disponível.",
+  lastStatusPayload: "Sem detalhes disponíveis.",
   statusHistory: [],
   featureFilter: "",
   eventsFilter: "",
@@ -53,7 +54,7 @@ function setStatus(message, data = null) {
   }).format(new Date())}`;
 
   if (data === null) {
-    state.lastStatusPayload = "Nenhum detalhe disponível.";
+    state.lastStatusPayload = "Sem detalhes disponíveis.";
     if (payload) payload.textContent = state.lastStatusPayload;
     return;
   }
@@ -149,7 +150,7 @@ function friendlyModelStatus(status) {
     error: "Falha",
   };
   if (labels[status]) return labels[status];
-  if (!status) return "Sem status";
+  if (!status) return "Sem status definido";
   const label = status.replace(/_/g, " ");
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -198,25 +199,25 @@ function renderModelStatus() {
     model?.artifact_path,
   );
   if (!hasModel) {
-    target.innerHTML = `<div class="model-empty">${escapeHtml(state.modelStatusMessage || "Use as ações desta página para carregar informações do modelo.")}</div>`;
+    target.innerHTML = `<div class="model-empty">${escapeHtml(state.modelStatusMessage || "Use as ações desta página para carregar os detalhes do modelo.")}</div>`;
     return;
   }
 
   const metrics = model.metrics || {};
   const process = model.process || {};
   const metricItems = [
-    { label: "Accuracy", value: metrics.accuracy == null ? null : formatPercentage(metrics.accuracy) },
-    { label: "Precision", value: metrics.precision == null ? null : formatPercentage(metrics.precision) },
-    { label: "Recall", value: metrics.recall == null ? null : formatPercentage(metrics.recall) },
-    { label: "F1 Score", value: metrics.f1_score == null ? null : formatPercentage(metrics.f1_score) },
-    { label: "ROC AUC", value: metrics.roc_auc == null ? null : formatPercentage(metrics.roc_auc) },
+    { label: "Acurácia", value: metrics.accuracy == null ? null : formatPercentage(metrics.accuracy) },
+    { label: "Precisão", value: metrics.precision == null ? null : formatPercentage(metrics.precision) },
+    { label: "Revocação", value: metrics.recall == null ? null : formatPercentage(metrics.recall) },
+    { label: "F1", value: metrics.f1_score == null ? null : formatPercentage(metrics.f1_score) },
+    { label: "AUC ROC", value: metrics.roc_auc == null ? null : formatPercentage(metrics.roc_auc) },
   ].filter((item) => item.value !== null);
 
   const processItems = [
-    { label: "Eventos", value: process.total_events == null ? null : formatCompactNumber(process.total_events) },
+    { label: "Atividades", value: process.total_events == null ? null : formatCompactNumber(process.total_events) },
     { label: "Usuários", value: process.unique_users == null ? null : formatCompactNumber(process.unique_users) },
     { label: "Positivos", value: process.positive_events == null ? null : formatCompactNumber(process.positive_events) },
-    { label: "Duração", value: process.duration_ms == null ? "Não disponível" : formatDurationMs(process.duration_ms) },
+    { label: "Duração", value: process.duration_ms == null ? "Indisponível" : formatDurationMs(process.duration_ms) },
   ].filter((item) => item.value !== null);
 
   const featureColumns = Array.isArray(process.feature_columns) ? process.feature_columns : [];
@@ -227,8 +228,8 @@ function renderModelStatus() {
       <div class="model-status-main">
         <span class="pill ${modelStatusTone(model.status)}">${escapeHtml(friendlyModelStatus(model.status))}</span>
         <div class="model-status-title">
-          <strong>${escapeHtml(model.model_name || "Modelo sem nome")}</strong>
-          <span>${escapeHtml(model.model_version || "Versão indisponível")} • ${escapeHtml(model.trained_at ? formatDateTime(model.trained_at) : "Sem data")}</span>
+          <strong>${escapeHtml(model.model_name || "Modelo sem título")}</strong>
+          <span>${escapeHtml(model.model_version || "Versão não informada")} • ${escapeHtml(model.trained_at ? formatDateTime(model.trained_at) : "Sem data de treino")}</span>
         </div>
       </div>
       ${model.artifact_path ? `<div class="model-status-path">${escapeHtml(model.artifact_path)}</div>` : ""}
@@ -272,7 +273,7 @@ function renderModelRuns() {
 
   const runs = Array.isArray(state.modelRuns) ? state.modelRuns : [];
   if (!runs.length) {
-    target.innerHTML = `<div class="model-empty">O histórico aparece aqui após o primeiro carregamento.</div>`;
+    target.innerHTML = `<div class="model-empty">O histórico aparece aqui após o primeiro treinamento.</div>`;
     return;
   }
 
@@ -282,12 +283,12 @@ function renderModelRuns() {
     const process = snapshot.process || {};
     const durationMs = run.duration_ms ?? process.duration_ms ?? null;
     const metricText = [
-      metrics.accuracy == null ? null : `Accuracy ${formatPercentage(metrics.accuracy)}`,
+      metrics.accuracy == null ? null : `Acurácia ${formatPercentage(metrics.accuracy)}`,
       metrics.f1_score == null ? null : `F1 ${formatPercentage(metrics.f1_score)}`,
-      metrics.roc_auc == null ? null : `ROC AUC ${formatPercentage(metrics.roc_auc)}`,
+      metrics.roc_auc == null ? null : `AUC ROC ${formatPercentage(metrics.roc_auc)}`,
     ].filter(Boolean).join(" • ");
     const processText = [
-      process.total_events == null ? null : `${formatCompactNumber(process.total_events)} eventos`,
+      process.total_events == null ? null : `${formatCompactNumber(process.total_events)} atividades`,
       process.unique_users == null ? null : `${formatCompactNumber(process.unique_users)} usuários`,
       process.positive_events == null ? null : `${formatCompactNumber(process.positive_events)} positivos`,
       durationMs == null ? null : `Duração ${formatDurationMs(durationMs)}`,
@@ -297,20 +298,20 @@ function renderModelRuns() {
       <article class="model-run-item">
         <div class="model-run-head">
           <div class="model-run-title">
-            <strong>${escapeHtml(run.model_version || "Versão sem nome")}</strong>
-            <small>${escapeHtml(run.trained_at ? formatDateTime(run.trained_at) : "Sem data")}</small>
+            <strong>${escapeHtml(run.model_version || "Versão sem título")}</strong>
+            <small>${escapeHtml(run.trained_at ? formatDateTime(run.trained_at) : "Sem data de treino")}</small>
           </div>
           <span class="pill ${modelStatusTone(run.status)}">${escapeHtml(friendlyModelStatus(run.status))}</span>
         </div>
         ${metricText ? `<div class="model-run-line">${escapeHtml(metricText)}</div>` : ""}
-        ${processText ? `<div class="model-run-line">${escapeHtml(processText)}</div>` : `<div class="model-run-line">Duração não disponível</div>`}
+        ${processText ? `<div class="model-run-line">${escapeHtml(processText)}</div>` : `<div class="model-run-line">Duração indisponível</div>`}
       </article>
     `;
   }).join("");
 }
 
 function formatLastSync(value) {
-  if (!value) return "Sincronização pendente";
+  if (!value) return "Aguardando a primeira atualização";
   return `Atualizado em ${new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
@@ -321,7 +322,7 @@ function updateDashboardSummary() {
   setText("overviewFeatures", String(state.features.length));
   setText("overviewEvents", String(state.events.length));
   const modelState = state.modelStatus?.status || state.modelRuns[0]?.status;
-  setText("overviewModel", modelState && modelState !== "idle" ? "Ativo" : "Sem dados");
+  setText("overviewModel", modelState && modelState !== "idle" ? "Disponível" : "Sem dados");
   setText("overviewExperiments", String(state.experimentsCount || state.experiments.length || 0));
   setText("overviewSync", formatLastSync(state.lastSyncAt));
   const m = metricsFromEvaluations();
@@ -378,6 +379,13 @@ function setLoading(btnId, loadingText) {
   };
 }
 
+function setEventStatus(message, tone = "info") {
+  const target = $("eventActionStatus");
+  if (!target) return;
+  target.textContent = message;
+  target.dataset.tone = tone;
+}
+
 async function api(path, options = {}) {
   const started = performance.now();
   try {
@@ -416,21 +424,27 @@ function enabledLabel(value) {
   return value ? '<span class="pill ok">Liberado</span>' : '<span class="pill bad">Bloqueado</span>';
 }
 
+function titleCase(value) {
+  const text = String(value ?? "").replace(/_/g, " ").trim();
+  if (!text) return "-";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function statusLabel(value) {
   return value ? '<span class="pill ok">Ativa</span>' : '<span class="pill bad">Pausada</span>';
 }
 
 function decisionLabel(value) {
   const labels = {
-    fixed: "Manual",
-    match_rollout: "Acompanhar",
+    fixed: "Limite fixo",
+    match_rollout: "Acompanhar cobertura",
     maximize_f1: "Automática",
     ml: "Inteligente",
     rollout: "Gradual",
     feature_disabled: "Regra pausada",
     feature_not_found: "Regra não encontrada",
-    continue: "Continuar",
-    stop_promote_b: "Promover B",
+    continue: "Em andamento",
+    stop_promote_b: "Escolher B",
     stop_keep_a: "Manter A",
   };
   return labels[value] || value || "-";
@@ -453,15 +467,15 @@ function experimentDecisionMessage(value, result) {
   const minSamples = Number(result?.min_samples_per_variant || 0);
 
   if (value === "stop_promote_b") {
-    return "A variante B está acima da A e já passou do mínimo para promoção.";
+    return "A variante B ficou melhor e já passou do mínimo para escolha.";
   }
   if (value === "stop_keep_a") {
     return "A variante A continua melhor. Mantenha A como padrão.";
   }
   if (samplesA < minSamples || samplesB < minSamples) {
-    return "Ainda faltam amostras para decidir com segurança.";
+    return "Ainda faltam amostras para tomar uma decisão segura.";
   }
-  return "Os dados ainda não mostraram uma diferença grande o bastante para encerrar o teste.";
+  return "Os dados ainda não mostram diferença suficiente para encerrar o teste.";
 }
 
 function formatDateTime(value) {
@@ -490,6 +504,81 @@ function metricsFromEvaluations() {
   };
 }
 
+function activitiesList() {
+  return Array.isArray(state.activities) ? state.activities : [];
+}
+
+function findActivity(key) {
+  const normalized = String(key ?? "").trim();
+  if (!normalized) return null;
+  return activitiesList().find((activity) => activity.key === normalized) || null;
+}
+
+function activityFriendlyName(key) {
+  const activity = findActivity(key);
+  if (activity?.name) return activity.name;
+  const labels = {
+    view: "Visualização",
+    viewed_feature: "Visualizou a funcionalidade",
+    addtocart: "Adição ao carrinho",
+    transaction: "Transação",
+    used_feature: "Uso da funcionalidade",
+    event: "Evento",
+  };
+  if (labels[key]) return labels[key];
+  return titleCase(key);
+}
+
+function findFeature(key) {
+  const normalized = String(key ?? "").trim();
+  if (!normalized) return null;
+  return (Array.isArray(state.features) ? state.features : []).find((feature) => feature.key === normalized) || null;
+}
+
+function featureFriendlyName(key) {
+  const feature = findFeature(key);
+  if (feature?.name) return feature.name;
+  const normalized = String(key ?? "").trim();
+  if (!normalized) return "-";
+  return titleCase(normalized);
+}
+
+function sourceFriendlyName(value) {
+  const normalized = String(value ?? "").trim();
+  const labels = {
+    web_app: "Aplicação web",
+    mobile_app: "Aplicação mobile",
+    email_campaign: "E-mail marketing",
+    ui_manual: "UI manual",
+  };
+  if (labels[normalized]) return labels[normalized];
+  if (!normalized) return "-";
+  return titleCase(normalized);
+}
+
+function activityDescription(key) {
+  const activity = findActivity(key);
+  if (activity?.description) return activity.description;
+  return "";
+}
+
+function activityOptionLabel(activity) {
+  if (!activity) return "-";
+  const label = activity.name || activity.key || "-";
+  const key = activity.key ? ` (${activity.key})` : "";
+  return `${label}${key}`;
+}
+
+function activityRowLabel(key) {
+  const activity = findActivity(key);
+  const identifier = String(key ?? "").trim() || activity?.key || "-";
+  const description = String(activity?.description || activity?.name || "").trim();
+  if (description) {
+    return `<div class="activity-cell"><strong>${escapeHtml(identifier)}</strong><div class="cell-subtle">${escapeHtml(description)}</div></div>`;
+  }
+  return `<div class="activity-cell"><strong>${escapeHtml(identifier)}</strong></div>`;
+}
+
 function updateMetricCards() {
   const m = metricsFromEvaluations();
   $("mTotal").textContent = String(m.total);
@@ -507,7 +596,7 @@ function renderFeaturesTable() {
   const filter = state.featureFilter.trim().toLowerCase();
   const filtered = [...(filter
     ? state.features.filter((feature) => {
-      const haystack = `${feature.name ?? ""} ${feature.key ?? ""}`.toLowerCase();
+      const haystack = `${feature.name ?? ""} ${feature.key ?? ""} ${feature.description ?? ""}`.toLowerCase();
       return haystack.includes(filter);
     })
     : state.features)]
@@ -516,7 +605,7 @@ function renderFeaturesTable() {
   $("featuresCount").textContent = `${filtered.length} linhas`;
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="6">Nenhuma regra encontrada.</td></tr>';
+    body.innerHTML = '<tr><td colspan="7">Nenhuma regra encontrada.</td></tr>';
     return;
   }
 
@@ -526,17 +615,24 @@ function renderFeaturesTable() {
     const strategy = decisionLabel(feature.ml_threshold_mode);
     const rolloutText = rollout === "-" ? "-" : `${rollout}%`;
     const thresholdText = thresholdValue === "-" ? "-" : Number(thresholdValue).toFixed(2);
-    return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rolloutText}</td>\n<td><span class="strategy-chip strategy-${feature.ml_threshold_mode || "fixed"}">${strategy}</span></td>\n<td>${thresholdText}</td>\n<td>${statusLabel(feature.enabled)}</td>\n</tr>`;
+    return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${feature.description ?? "-"}</td>\n<td>${rolloutText}</td>\n<td><span class="strategy-chip strategy-${feature.ml_threshold_mode || "fixed"}">${strategy}</span></td>\n<td>${thresholdText}</td>\n<td>${statusLabel(feature.enabled)}</td>\n</tr>`;
   }).join("");
 }
 
 function renderEvaluationTable() {
   $("evaluationCount").textContent = `${state.evaluations.length} linhas`;
-  $("evalBody").innerHTML = state.evaluations.length
-    ? state.evaluations.map((r) => {
-    return `\n<tr>\n<td>${r.user_id}</td>\n<td>${escapeHtml(r.feature_key || "-")}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${r.score ?? "-"}</td>\n<td>${r.threshold ?? "-"}</td>\n<td>${r.experiment?.variant ?? "-"}</td>\n</tr>`;
-  }).join("")
-    : '<tr><td colspan="7">Nenhuma avaliação feita ainda.</td></tr>';
+  $("evalBody").innerHTML = renderEvaluationRows(state.evaluations, {
+    emptyLabel: "Nenhuma avaliação registrada ainda.",
+  });
+}
+
+function renderEvaluationRows(rows, { emptyLabel } = {}) {
+  const items = Array.isArray(rows) ? rows : [];
+  if (!items.length) {
+    return `<tr><td colspan="8">${escapeHtml(emptyLabel || "Nenhuma avaliação registrada ainda.")}</td></tr>`;
+  }
+
+  return items.map((r) => `\n<tr>\n<td>${escapeHtml(r.user_id || "-")}</td>\n<td>${activityRowLabel(r.activity)}</td>\n<td>${escapeHtml(r.feature_key || "-")}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${escapeHtml(r.score ?? "-")}</td>\n<td>${escapeHtml(r.threshold ?? "-")}</td>\n<td>${escapeHtml(r.experiment?.variant ?? "-")}</td>\n</tr>`).join("");
 }
 
 function featureKeysFromEvents(events) {
@@ -623,17 +719,16 @@ function renderDashboardTables() {
     dashboardFeaturesBody.innerHTML = attentionRows.length
       ? attentionRows.map(({ feature, eventCount, evalCount }) => {
         const rollout = feature.rollout_percentage ?? "-";
-        return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rollout === "-" ? "-" : `${rollout}%`}</td>\n<td>${yesNo(feature.ml_enabled)}</td>\n<td>${statusLabel(feature.enabled)}<div class="cell-subtle">${eventCount} eventos • ${evalCount} avaliações</div></td>\n</tr>`;
+        return `\n<tr>\n<td>${feature.name ?? "-"}</td>\n<td>${feature.key ?? "-"}</td>\n<td>${rollout === "-" ? "-" : `${rollout}%`}</td>\n<td>${yesNo(feature.ml_enabled)}</td>\n<td>${statusLabel(feature.enabled)}<div class="cell-subtle">${eventCount} atividades • ${evalCount} avaliações</div></td>\n</tr>`;
       }).join("")
-      : '<tr><td colspan="5">Nenhuma regra pede atenção agora.</td></tr>';
+      : '<tr><td colspan="5">Nenhuma regra precisa de atenção agora.</td></tr>';
   }
 
   const dashboardEvalBody = $("dashboardEvalBody");
   if (dashboardEvalBody) {
-    const recentEvaluations = [...state.evaluations].slice(0, 5);
-    dashboardEvalBody.innerHTML = recentEvaluations.length
-      ? recentEvaluations.map((r) => `\n<tr>\n<td>${r.user_id}</td>\n<td>${enabledLabel(r.enabled)}</td>\n<td>${decisionLabel(r.decision_source)}</td>\n<td>${r.score ?? "-"}</td>\n<td>${r.threshold ?? "-"}</td>\n<td>${r.experiment?.variant ?? "-"}</td>\n</tr>`).join("")
-      : '<tr><td colspan="6">As avaliações aparecerão aqui após a primeira execução.</td></tr>';
+    dashboardEvalBody.innerHTML = renderEvaluationRows(state.evaluations, {
+      emptyLabel: "As avaliações aparecerão aqui após a primeira execução.",
+    });
   }
 
   const workloadBody = $("workloadBody");
@@ -671,7 +766,7 @@ function renderDashboardTables() {
 
     workloadBody.innerHTML = rows.length
       ? rows.map((row) => `\n<tr>\n<td>${row.name}<div class="cell-subtle">${row.key}</div></td>\n<td>${row.eventCount}</td>\n<td>${row.evalCount}</td>\n<td>${row.rollout}%</td>\n<td>${row.status}</td>\n<td>${row.lastAction}</td>\n</tr>`).join("")
-      : '<tr><td colspan="6">Sem dados suficientes para montar a carga operacional.</td></tr>';
+      : '<tr><td colspan="6">Ainda não há dados suficientes para mostrar o uso por regra.</td></tr>';
   }
 }
 
@@ -679,12 +774,12 @@ function renderEventsTable() {
   const filter = state.eventsFilter.trim().toLowerCase();
   const filtered = filter
     ? state.events.filter((e) => {
-      const haystack = `${e.user_id ?? ""} ${e.feature_key ?? ""} ${e.event_type ?? ""}`.toLowerCase();
+      const haystack = `${e.user_id ?? ""} ${e.feature_key ?? ""} ${e.event_type ?? ""} ${activityFriendlyName(e.event_type ?? "")}`.toLowerCase();
       return haystack.includes(filter);
     })
     : state.events;
 
-  const sorted = [...filtered].sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+  const sorted = filtered;
   const perPage = Math.max(1, normalizeNumber($("eventsPerPage")?.value, 25) || 25);
   const totalPages = Math.max(1, Math.ceil(sorted.length / perPage));
   state.eventsPage = Math.min(Math.max(1, state.eventsPage), totalPages);
@@ -692,8 +787,14 @@ function renderEventsTable() {
   const pageRows = sorted.slice(start, start + perPage);
   $("eventsCount").textContent = `${sorted.length} linhas • página ${state.eventsPage}/${totalPages}`;
   $("eventsBody").innerHTML = pageRows.length
-    ? pageRows.map((e) => `\n<tr>\n<td>${formatDateTime(e.timestamp)}</td>\n<td>${e.user_id || "-"}</td>\n<td>${e.feature_key || "-"}</td>\n<td>${e.event_type || "-"}</td>\n<td>${e.properties?.latency_ms ?? "-"}</td>\n</tr>`).join("")
-    : '<tr><td colspan="5">Nenhuma atividade encontrada.</td></tr>';
+    ? pageRows.map((e) => {
+      const activity = findActivity(e.event_type);
+      const identifier = e.event_type || "-";
+      const description = e.properties?.activity_name || activity?.description || activity?.name || activityFriendlyName(e.event_type) || "-";
+      const source = sourceFriendlyName(e.source || e.properties?.source || "-");
+      return `\n<tr>\n<td>${formatDateTime(e.timestamp)}</td>\n<td>${e.user_id || "-"}</td>\n<td><span class="event-identifier">${escapeHtml(identifier)}</span></td>\n<td>${escapeHtml(description)}</td>\n<td>${escapeHtml(source)}</td>\n<td>${e.properties?.latency_ms ?? "-"}</td>\n</tr>`;
+    }).join("")
+    : '<tr><td colspan="6">Nenhuma atividade encontrada.</td></tr>';
 
   const typeSummary = $("eventTypeSummary");
   if (typeSummary) {
@@ -701,7 +802,7 @@ function renderEventsTable() {
     for (const e of sorted) counts[e.event_type || "-"] = (counts[e.event_type || "-"] || 0) + 1;
     const topTypes = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
     typeSummary.innerHTML = topTypes.length
-      ? topTypes.map(([type, count]) => `<span class="pill">${type}: ${count}</span>`).join("")
+      ? topTypes.map(([type, count]) => `<span class="pill">${escapeHtml(type)}: ${count}</span>`).join("")
       : '<span class="pill">Sem tipos registrados</span>';
   }
 
@@ -709,6 +810,12 @@ function renderEventsTable() {
   const nextBtn = $("eventsNextBtn");
   if (prevBtn) prevBtn.disabled = state.eventsPage <= 1;
   if (nextBtn) nextBtn.disabled = state.eventsPage >= totalPages;
+}
+
+function scrollEventsTableToTop() {
+  const body = $("eventsBody");
+  const wrap = body?.closest(".table-wrap");
+  if (wrap) wrap.scrollTop = 0;
 }
 
 function renderExperimentFeatureOptions() {
@@ -719,7 +826,7 @@ function renderExperimentFeatureOptions() {
   const features = Array.isArray(state.features) ? state.features : [];
   if (!features.length) {
     select.disabled = true;
-    select.innerHTML = '<option value="">Carregando regras...</option>';
+    select.innerHTML = '<option value="">Carregando opções de regras...</option>';
     return;
   }
 
@@ -742,7 +849,7 @@ function renderEventFeatureOptions() {
   const features = Array.isArray(state.features) ? state.features : [];
   if (!features.length) {
     select.disabled = true;
-    select.innerHTML = '<option value="">Carregue as regras para escolher uma</option>';
+    select.innerHTML = '<option value="">Carregue as regras para selecionar uma</option>';
     return;
   }
 
@@ -754,9 +861,49 @@ function renderEventFeatureOptions() {
 
   if (current && features.some((feature) => feature.key === current)) {
     select.value = current;
-  } else if (!select.value && features.length === 1) {
+  } else if (!select.value && features.length) {
     select.value = features[0].key || "";
   }
+}
+
+function renderExperimentMetricOptions() {
+  const select = $("experimentMetricEvent");
+  if (!select) return;
+
+  const current = select.value;
+  const activities = activitiesList().filter((activity) => activity.enabled !== false);
+
+  if (!activities.length) {
+    select.disabled = true;
+    select.innerHTML = '<option value="">Cadastre atividades para escolher a métrica</option>';
+    return;
+  }
+
+  select.disabled = false;
+  select.innerHTML = [
+    '<option value="">Selecione uma atividade</option>',
+    ...activities.map((activity) => `<option value="${escapeHtml(activity.key || "")}">${escapeHtml(activityOptionLabel(activity))}</option>`),
+  ].join("");
+
+  if (current && activities.some((activity) => activity.key === current)) {
+    select.value = current;
+  } else if (!select.value && activities.length) {
+    select.value = activities[0].key || "";
+  }
+}
+
+async function loadActivities({ silent = false } = {}) {
+  const out = await api("/activities");
+  state.activities = Array.isArray(out.data) ? out.data : [];
+  renderEventsTable();
+  renderEvaluationTable();
+  renderDashboardTables();
+  renderExperimentMetricOptions();
+  if (!silent) {
+    markDashboardSync();
+    setStatus(out.ok ? `Atividades carregadas: ${state.activities.length}` : `Erro ao carregar atividades (${out.status})`, out.data);
+  }
+  return out;
 }
 
 function renderExperimentsTable() {
@@ -764,10 +911,10 @@ function renderExperimentsTable() {
   if (!body) return;
 
   const experiments = Array.isArray(state.experiments) ? state.experiments : [];
-  setText("experimentsCount", experiments.length === 1 ? "1 experimento" : `${experiments.length} experimentos`);
+  setText("experimentsCount", experiments.length === 1 ? "1 teste" : `${experiments.length} testes`);
 
   if (!experiments.length) {
-    body.innerHTML = '<tr><td colspan="6">Nenhum experimento cadastrado.</td></tr>';
+    body.innerHTML = '<tr><td colspan="7">Nenhum teste criado ainda.</td></tr>';
     renderExperimentResult();
     return;
   }
@@ -779,9 +926,10 @@ function renderExperimentsTable() {
     return `
       <tr class="${selected ? "selected" : ""}">
         <td>${escapeHtml(experiment.name || "-")}<div class="cell-subtle">${escapeHtml(formatDateTime(experiment.created_at))}</div></td>
-        <td>${escapeHtml(experiment.feature_key || "-")}</td>
-        <td>${escapeHtml(experiment.primary_metric_event || "-")}</td>
-        <td>${minSamples} amostras • ${minLift}</td>
+        <td>${escapeHtml(featureFriendlyName(experiment.feature_key))}<div class="cell-subtle">${escapeHtml(experiment.feature_key || "-")}</div></td>
+        <td>${escapeHtml(activityFriendlyName(experiment.primary_metric_event))}<div class="cell-subtle">${escapeHtml(experiment.primary_metric_event || "-")}</div></td>
+        <td>${minSamples} registros</td>
+        <td>${minLift}</td>
         <td>${experimentStatusLabel(experiment.enabled)}</td>
         <td><button class="ghost table-action experiment-action" type="button" data-experiment-id="${escapeHtml(String(experiment.id))}">Ver resultado</button></td>
       </tr>
@@ -808,14 +956,18 @@ function renderExperimentResult() {
   const result = state.experimentResult;
 
   if (!selected || !result) {
-    target.innerHTML = `<div class="experiment-result-empty">${escapeHtml(state.experimentResultMessage || "Selecione um experimento para ver o resultado.")}</div>`;
+    target.innerHTML = `<div class="experiment-result-empty">${escapeHtml(state.experimentResultMessage || "Selecione um teste para visualizar o resultado.")}</div>`;
     return;
   }
 
   const variantA = result.variant_stats?.A || {};
   const variantB = result.variant_stats?.B || {};
+  const userStatsA = result.user_stats?.A || {};
+  const userStatsB = result.user_stats?.B || {};
   const samplesA = Number(variantA.samples || 0);
   const samplesB = Number(variantB.samples || 0);
+  const usersA = Number(userStatsA.users || 0);
+  const usersB = Number(userStatsB.users || 0);
   const positivesA = Number(variantA.positives || 0);
   const positivesB = Number(variantB.positives || 0);
   const rateA = samplesA ? positivesA / samplesA : 0;
@@ -827,28 +979,42 @@ function renderExperimentResult() {
       <div class="experiment-result-main">
         ${experimentStatusLabel(selected.enabled)}
         <div class="experiment-result-title">
-          <strong>${escapeHtml(selected.name || "Experimento")}</strong>
-          <span>${escapeHtml(selected.feature_key || "-")} • ${escapeHtml(selected.primary_metric_event || "-")}</span>
+          <strong>${escapeHtml(selected.name || "Teste")}</strong>
+          <span>${escapeHtml(featureFriendlyName(selected.feature_key))} • ${escapeHtml(activityFriendlyName(selected.primary_metric_event))}</span>
         </div>
+        <p class="experiment-result-summary-note">Comparação entre usuários únicos das variantes A e B.</p>
       </div>
       <span class="pill ${experimentDecisionTone(result.decision)}">${escapeHtml(decisionLabel(result.decision))}</span>
     </div>
 
+    <div class="experiment-user-grid">
+      <article class="experiment-user-card">
+        <span>Usuários A</span>
+        <strong>${formatCompactNumber(usersA)}</strong>
+        <p>Usuários únicos atribuídos à variante A.</p>
+      </article>
+      <article class="experiment-user-card">
+        <span>Usuários B</span>
+        <strong>${formatCompactNumber(usersB)}</strong>
+        <p>Usuários únicos atribuídos à variante B.</p>
+      </article>
+    </div>
+
     <div class="experiment-result-grid">
       <article class="experiment-stat-card">
-        <span>Taxa A</span>
+        <span>Eventos A</span>
         <strong>${formatPercentage(rateA)}</strong>
       </article>
       <article class="experiment-stat-card">
-        <span>Taxa B</span>
+        <span>Eventos B</span>
         <strong>${formatPercentage(rateB)}</strong>
       </article>
       <article class="experiment-stat-card">
-        <span>Lift</span>
+        <span>Diferença entre B e A</span>
         <strong>${formatSignedPercentage(lift)}</strong>
       </article>
       <article class="experiment-stat-card">
-        <span>Diferença mínima</span>
+        <span>Diferença mínima para decidir</span>
         <strong>${formatPercentage(result.min_lift)}</strong>
       </article>
     </div>
@@ -856,17 +1022,17 @@ function renderExperimentResult() {
     <div class="experiment-variant-grid">
       <article class="experiment-variant-card">
         <span>Variante A</span>
-        <strong>${formatCompactNumber(samplesA)} amostras</strong>
-        <p>${formatCompactNumber(positivesA)} positivas • taxa ${formatPercentage(rateA)}</p>
+        <strong>${formatCompactNumber(samplesA)} registros</strong>
+        <p>${formatCompactNumber(positivesA)} com sucesso • taxa ${formatPercentage(rateA)}</p>
       </article>
       <article class="experiment-variant-card">
         <span>Variante B</span>
-        <strong>${formatCompactNumber(samplesB)} amostras</strong>
-        <p>${formatCompactNumber(positivesB)} positivas • taxa ${formatPercentage(rateB)}</p>
+        <strong>${formatCompactNumber(samplesB)} registros</strong>
+        <p>${formatCompactNumber(positivesB)} com sucesso • taxa ${formatPercentage(rateB)}</p>
       </article>
     </div>
 
-    <p class="experiment-result-note">${escapeHtml(experimentDecisionMessage(result.decision, result))} Mínimo de ${formatCompactNumber(result.min_samples_per_variant)} amostras por variante.</p>
+    <p class="experiment-result-note">${escapeHtml(experimentDecisionMessage(result.decision, result))} A leitura considera usuários únicos por variante e seus eventos associados. Mínimo de ${formatCompactNumber(result.min_samples_per_variant)} registros por variante.</p>
   `;
 }
 
@@ -877,7 +1043,7 @@ async function loadExperimentResult(experimentId, { silent = false } = {}) {
   state.selectedExperimentId = selected;
   localStorage.setItem("adaptiveFlags.experimentId", String(selected));
   state.experimentResult = null;
-  state.experimentResultMessage = "Carregando resultado...";
+  state.experimentResultMessage = "Carregando resumo...";
   renderExperimentsTable();
 
   const out = await api(`/experiments/${selected}/result`);
@@ -889,10 +1055,10 @@ async function loadExperimentResult(experimentId, { silent = false } = {}) {
   }
 
   state.experimentResult = null;
-  state.experimentResultMessage = `Não foi possível carregar o resultado (${out.status}).`;
+  state.experimentResultMessage = `Não foi possível carregar o resumo (${out.status}).`;
   renderExperimentResult();
   if (!silent) {
-    setStatus(`Erro ao carregar resultado do experimento (${out.status})`, out.data);
+    setStatus(`Erro ao carregar resultado do teste (${out.status})`, out.data);
   }
 }
 
@@ -961,7 +1127,7 @@ function drawCharts() {
     type: "line",
     data: {
       labels: timeline.labels,
-      datasets: [{ label: "Eventos/dia", data: timeline.values, borderColor: palette.blue, backgroundColor: "rgba(13,103,232,0.12)", fill: true, tension: 0.25, pointRadius: 3 }],
+      datasets: [{ label: "Atividades/dia", data: timeline.values, borderColor: palette.blue, backgroundColor: "rgba(13,103,232,0.12)", fill: true, tension: 0.25, pointRadius: 3 }],
     },
     options: {
       responsive: true,
@@ -991,10 +1157,11 @@ function configureCharts() {
 }
 
 function featurePayload() {
+  const description = $("featureDescription").value.trim();
   return {
     name: $("featureName").value.trim(),
     key: $("featureKey").value.trim(),
-    description: "Atualizada pela UI",
+    description: description || null,
     enabled: $("enabled").checked,
     rollout_percentage: normalizeNumber($("rollout").value, 0),
     ml_enabled: $("thresholdMode").value !== "fixed",
@@ -1026,6 +1193,7 @@ async function upsertFeature() {
       state.features = Array.isArray(refreshed.data) ? refreshed.data : state.features;
       updateMetricCards();
       renderFeaturesTable();
+      renderEvaluationTable();
       renderExperimentFeatureOptions();
       renderEventFeatureOptions();
       renderDashboardTables();
@@ -1043,6 +1211,7 @@ async function listFeatures(btnId = "loadFeaturesBtnFeature") {
     state.features = Array.isArray(out.data) ? out.data : [];
     updateMetricCards();
     renderFeaturesTable();
+    renderEvaluationTable();
     renderExperimentFeatureOptions();
     renderEventFeatureOptions();
     renderDashboardTables();
@@ -1091,8 +1260,8 @@ async function trainModel() {
   const release = setLoading("trainBtn", "Treinando...");
   try {
     const out = await api("/train", { method: "POST", body: JSON.stringify({}) });
-    setStatus(out.ok ? `Treino concluído em ${out.elapsed}ms` : `Erro no treino (${out.status})`, out.data);
-    setModelStatus(out.ok ? `Treino concluído em ${out.elapsed}ms` : `Erro no treino (${out.status})`, out.data);
+    setStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
+    setModelStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
     if (out.ok) {
       state.modelStatus = out.data;
       await loadModelRuns(5, { silent: true });
@@ -1106,8 +1275,8 @@ async function loadModelStatus() {
   const release = () => {};
   try {
     const out = await api("/model/status");
-    setStatus(out.ok ? "Status do modelo carregado" : `Erro ao carregar status do modelo (${out.status})`, out.data);
-    setModelStatus(out.ok ? "Modelo carregado." : `Erro ao carregar status do modelo (${out.status})`, out.data);
+    setStatus(out.ok ? "Situação do modelo carregada." : `Erro ao carregar a situação do modelo (${out.status})`, out.data);
+    setModelStatus(out.ok ? "Situação do modelo carregada." : `Erro ao carregar a situação do modelo (${out.status})`, out.data);
     if (out.ok) {
       state.modelStatus = out.data;
       markDashboardSync();
@@ -1128,7 +1297,7 @@ async function loadModelRuns(limit = 5, { silent = false } = {}) {
       markDashboardSync();
       updateDashboardSummary();
     } else {
-      setStatus(`Erro ao carregar histórico de treinos (${out.status})`, out.data);
+      setStatus(`Erro ao carregar histórico de treinamentos (${out.status})`, out.data);
     }
   } finally { release(); }
 }
@@ -1196,8 +1365,8 @@ async function clearEvaluations() {
 
 function operationalMetrics() {
   const out = {};
-  const latency = normalizeNumber($("latencyMs").value);
-  const errorRate = normalizeNumber($("errorRate").value);
+  const latency = normalizeNumber($("latencyMs")?.value);
+  const errorRate = normalizeNumber($("errorRate")?.value);
   if (latency !== null) out.latency_ms = latency;
   if (errorRate !== null) out.error_rate = errorRate;
   return out;
@@ -1213,22 +1382,50 @@ async function sendEvent() {
   const batchCount = ingestCount();
   const release = setLoading("sendEventBtn", batchCount > 1 ? "Enviando lote..." : "Enviando...");
   try {
-    const featureKey = $("eventFeatureKey").value.trim();
+    const featureKeyInput = $("eventFeatureKey").value.trim();
+    const featureKey = featureKeyInput || $("eventActivityKey").value.trim();
     const userId = $("eventUserId").value.trim();
-    const eventType = $("eventType").value.trim();
+    const activityKey = $("eventActivityKey").value.trim();
+    const activityName = $("eventActivityName").value.trim();
     const source = $("eventSource").value.trim() || "ui_manual";
-    if (!featureKey || !userId || !eventType) {
-      setStatus("Selecione a regra, informe o usuário e o tipo de atividade.");
+    if (!featureKey || !userId || !activityKey) {
+      setEventStatus("Informe o usuário e o identificador da atividade.", "bad");
       return;
+    }
+
+    if ($("eventFeatureKey") && !featureKeyInput) {
+      $("eventFeatureKey").value = featureKey;
     }
 
     const baseEvent = {
       user_id: userId,
       feature_key: featureKey,
-      event_type: eventType,
+      event_type: activityKey,
       timestamp: new Date().toISOString(),
-      properties: operationalMetrics(),
+      properties: {
+        ...operationalMetrics(),
+        activity_name: activityName || null,
+      },
     };
+
+    const optimisticEvent = batchCount === 1
+      ? {
+        id: `temp-${Date.now()}`,
+        source,
+        ...baseEvent,
+      }
+      : null;
+
+    if (optimisticEvent) {
+      state.events = [optimisticEvent, ...state.events];
+      state.eventsPage = 1;
+      renderEventsTable();
+      scrollEventsTableToTop();
+      updateMetricCards();
+      drawCharts();
+      markDashboardSync();
+      renderDashboardTables();
+    }
 
     const out = batchCount === 1
       ? await api("/events", { method: "POST", body: JSON.stringify({ ...baseEvent, source }) })
@@ -1244,12 +1441,39 @@ async function sendEvent() {
       });
 
     setStatus(
-      out.ok ? (batchCount === 1 ? "Atividade registrada." : `Atividades registradas em lote: ${batchCount}.`) : `Erro ao registrar atividade (${out.status})`,
+      out.ok ? (batchCount === 1 ? "Registro concluído." : `Registros concluídos em lote: ${batchCount}.`) : `Erro ao registrar atividade (${out.status})`,
       out.data,
     );
     if (out.ok) {
-      await loadEventsFromDb("loadEventsBtn");
+      if (batchCount === 1 && out.data) {
+        state.events = [
+          out.data,
+          ...state.events.filter((event) => String(event.id) !== String(out.data.id) && !String(event.id).startsWith("temp-")),
+        ];
+        state.eventsFilter = "";
+        const filterInput = $("eventsFilter");
+        if (filterInput) filterInput.value = "";
+        renderEventsTable();
+        scrollEventsTableToTop();
+        updateMetricCards();
+        drawCharts();
+        markDashboardSync();
+        renderDashboardTables();
+      }
+      else {
+        await loadEventsFromDb("loadEventsBtn");
+      }
       return;
+    }
+
+    if (optimisticEvent) {
+      state.events = state.events.filter((event) => event.id !== optimisticEvent.id);
+      renderEventsTable();
+      scrollEventsTableToTop();
+      updateMetricCards();
+      drawCharts();
+      markDashboardSync();
+      renderDashboardTables();
     }
   } finally { release(); }
 }
@@ -1259,18 +1483,19 @@ async function loadEventsFromDb(btnId = "loadEventsBtn") {
   try {
     const out = await api("/events");
     if (!out.ok || !Array.isArray(out.data)) {
-      setStatus(`Erro ao carregar eventos (${out.status})`, out.data);
+      setStatus(`Erro ao carregar atividades (${out.status})`, out.data);
       return;
     }
 
     state.events = out.data;
     state.eventsPage = 1;
     renderEventsTable();
+    scrollEventsTableToTop();
     updateMetricCards();
     drawCharts();
     markDashboardSync();
     renderDashboardTables();
-    setStatus(`Eventos carregados: ${state.events.length}`);
+    setStatus(`Atividades carregadas: ${state.events.length}`);
   } finally { release(); }
 }
 
@@ -1291,10 +1516,10 @@ async function loadExperiments() {
       await loadExperimentResult(selected.id, { silent: true });
     } else {
       state.experimentResult = null;
-      state.experimentResultMessage = "Nenhum experimento cadastrado ainda.";
+      state.experimentResultMessage = "Nenhum teste criado ainda.";
       renderExperimentResult();
     }
-    setStatus(out.ok ? `Experimentos carregados: ${state.experiments.length}` : `Erro ao carregar experimentos (${out.status})`, out.data);
+    setStatus(out.ok ? `Testes carregados: ${state.experiments.length}` : `Erro ao carregar testes (${out.status})`, out.data);
   } finally { release(); }
 }
 
@@ -1316,7 +1541,7 @@ async function createExperiment() {
   try {
     const payload = experimentPayload();
     if (!payload.name || !payload.feature_key || !payload.primary_metric_event) {
-      setStatus("Informe nome, regra e métrica principal do experimento.");
+      setStatus("Informe nome, regra e atividade principal do teste.");
       return;
     }
 
@@ -1326,11 +1551,11 @@ async function createExperiment() {
     });
 
     if (!out.ok) {
-      setStatus(`Erro ao criar experimento (${out.status})`, out.data);
+      setStatus(`Erro ao criar teste (${out.status})`, out.data);
       return;
     }
 
-    setStatus(`Experimento criado em ${out.elapsed}ms.`, out.data);
+    setStatus(`Teste criado em ${out.elapsed}ms.`, out.data);
     if (out.data?.id) {
       state.selectedExperimentId = out.data.id;
       localStorage.setItem("adaptiveFlags.experimentId", String(out.data.id));
@@ -1366,14 +1591,14 @@ function bind() {
   });
   on("copyStatusBtn", async () => {
     try {
-      await navigator.clipboard.writeText(state.lastStatusPayload || "Nenhum detalhe disponível.");
+      await navigator.clipboard.writeText(state.lastStatusPayload || "Sem detalhes disponíveis.");
       setStatus("Detalhes copiados para a área de transferência.", state.lastStatusPayload);
     } catch (error) {
       setStatus("Não foi possível copiar os detalhes.", String(error));
     }
   });
   on("clearStatusBtn", () => {
-    state.lastStatusPayload = "Nenhum detalhe disponível.";
+    state.lastStatusPayload = "Sem detalhes disponíveis.";
     state.statusHistory = [];
     const summary = $("apiStatusSummary");
     const meta = $("apiStatusMeta");
@@ -1381,7 +1606,7 @@ function bind() {
     const history = $("statusHistory");
     if (summary) summary.textContent = "Pronto.";
     if (meta) meta.textContent = "Sem atividade recente.";
-    if (payload) payload.textContent = "Nenhum detalhe disponível.";
+    if (payload) payload.textContent = "Sem detalhes disponíveis.";
     if (history) history.innerHTML = "";
   });
   const featureFilter = $("featureFilter");
@@ -1446,6 +1671,7 @@ function init() {
     setStatus("Os gráficos não carregaram, mas o restante do painel continua disponível.");
   }
   Promise.allSettled([
+    loadActivities({ silent: true }),
     listFeatures("loadFeaturesBtnFeature"),
     loadEventsFromDb("loadEventsBtn"),
     loadEvaluations(),
@@ -1454,5 +1680,7 @@ function init() {
     loadExperiments(),
   ]).finally(() => drawCharts());
 }
+
+window.sendEvent = sendEvent;
 
 document.addEventListener("DOMContentLoaded", init);
