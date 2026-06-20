@@ -9,6 +9,7 @@ class EvaluationRecord:
     id: int | None
     feature_key: str
     user_id: str
+    activity: str | None
     enabled: bool
     decision_source: str
     score: float | None
