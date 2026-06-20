@@ -18,12 +18,15 @@ def handle_user_request(user_id: str) -> None:
 
     render_checkout(user_id, enabled=enabled)
 
-    event_type = "checkout_upsell_shown" if enabled else "viewed_default_checkout"
+    event_type = "checkout_upsell_shown" if enabled else "viewed_feature"
     tracked = client.track(
         user_id=user_id,
         feature_key="new_checkout",
         event_type=event_type,
-        properties={"surface": "checkout_page"},
+        properties={
+            "surface": "checkout_page",
+            "activity_name": "Visualizou a funcionalidade" if event_type == "viewed_feature" else "Exibiu oferta no checkout",
+        },
     )
     print(f"[{user_id}] Event tracked with id={tracked.get('id')}")
 
