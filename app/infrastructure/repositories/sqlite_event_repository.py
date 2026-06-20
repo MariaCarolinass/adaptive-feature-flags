@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from sqlalchemy import select
+from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
 from app.core.exceptions import NotFoundError
@@ -23,6 +26,7 @@ class SqliteEventRepository(EventRepository):
                 feature_key=event.feature_key,
                 event_type=event.event_type,
                 timestamp=event.timestamp,
+                updated_at=datetime.now(timezone.utc),
                 properties=properties,
             )
             session.add(row)
@@ -44,7 +48,7 @@ class SqliteEventRepository(EventRepository):
             stmt = stmt.where(EventModel.feature_key == feature_key)
         if event_type is not None:
             stmt = stmt.where(EventModel.event_type == event_type)
-        stmt = stmt.order_by(EventModel.timestamp.asc())
+        stmt = stmt.order_by(func.coalesce(EventModel.updated_at, EventModel.timestamp).desc(), EventModel.id.desc())
 
         with self._session_factory() as session:
             rows = session.execute(stmt).scalars().all()
@@ -70,6 +74,7 @@ class SqliteEventRepository(EventRepository):
             row.feature_key = event.feature_key
             row.event_type = event.event_type
             row.timestamp = event.timestamp
+            row.updated_at = datetime.now(timezone.utc)
             row.properties = properties
             session.commit()
         return event
@@ -87,12 +92,15 @@ class SqliteEventRepository(EventRepository):
     def _to_entity(row: EventModel) -> Event:
         properties = row.properties or {}
         source_value = properties.get("source")
+        timestamp = row.timestamp
+        if timestamp is not None:
+            timestamp = timestamp.astimezone(timezone.utc) if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
         return Event(
             id=row.id,
             source=str(source_value) if source_value is not None else None,
             user_id=row.user_id,
             feature_key=row.feature_key,
             event_type=row.event_type,
-            timestamp=row.timestamp,
+            timestamp=timestamp,
             properties=properties,
         )
