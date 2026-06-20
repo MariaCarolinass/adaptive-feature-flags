@@ -35,7 +35,7 @@ Pontos de cuidado:
 Pontos de cuidado:
 
 - Idempotência e validação de payload em lote.
-- Mapeamento consistente de `event_type` para pipeline de treino.
+- Mapeamento consistente de `event_type` e do catálogo de atividades para pipeline de treino.
 
 ## 4) CRUD de features
 
