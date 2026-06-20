@@ -27,6 +27,8 @@ def init_db() -> None:
     Base.metadata.create_all(bind=engine)
     _apply_sqlite_feature_threshold_migration()
     _apply_sqlite_model_training_run_migration()
+    _apply_sqlite_evaluation_activity_migration()
+    _apply_sqlite_event_updated_at_migration()
 
 
 def _apply_sqlite_feature_threshold_migration() -> None:
@@ -60,4 +62,34 @@ def _apply_sqlite_model_training_run_migration() -> None:
         if "duration_ms" not in columns:
             conn.exec_driver_sql(
                 "ALTER TABLE model_training_runs ADD COLUMN duration_ms INTEGER"
+            )
+
+
+def _apply_sqlite_evaluation_activity_migration() -> None:
+    if not str(engine.url).startswith("sqlite:"):
+        return
+
+    with engine.begin() as conn:
+        columns = {
+            row[1]
+            for row in conn.exec_driver_sql("PRAGMA table_info(evaluations)").fetchall()
+        }
+        if "activity" not in columns:
+            conn.exec_driver_sql(
+                "ALTER TABLE evaluations ADD COLUMN activity VARCHAR(50)"
+            )
+
+
+def _apply_sqlite_event_updated_at_migration() -> None:
+    if not str(engine.url).startswith("sqlite:"):
+        return
+
+    with engine.begin() as conn:
+        columns = {
+            row[1]
+            for row in conn.exec_driver_sql("PRAGMA table_info(events)").fetchall()
+        }
+        if "updated_at" not in columns:
+            conn.exec_driver_sql(
+                "ALTER TABLE events ADD COLUMN updated_at DATETIME"
             )
