@@ -6,6 +6,7 @@ Documentação funcional dos endpoints expostos pela API.
 
 - `health-and-root.md`
 - `features.md`
+- `activities.md`
 - `events-and-ingest.md`
 - `evaluation.md`
 - `training-and-model-status.md`
