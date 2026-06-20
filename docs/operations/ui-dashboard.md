@@ -35,12 +35,12 @@ Com a API rodando:
 
 4. **Avaliação**
 - Avalia um lote de usuários para a regra selecionada.
-- Mostra resultado, origem da decisão, score, limite e variação.
+- Mostra usuário, atividade, resultado, origem da decisão, pontuação, pontuação mínima e variação.
 
 5. **Atividades**
 - Registra atividades individuais ou em lote.
-- Filtra atividades por usuário, regra e tipo.
-- Mostra eventos recentes com paginação.
+- Filtra atividades por usuário, regra e atividade.
+- Mostra atividades recentes com paginação.
 
 6. **Treinos**
 - Treina o modelo.
