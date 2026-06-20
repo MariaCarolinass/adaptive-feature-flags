@@ -52,6 +52,7 @@ class EvaluationService:
         """Return immediate decision for one user/feature pair."""
         self.metrics.increment("evaluation.count")
         feature = self.feature_repository.get_by_key(feature_key)
+        activity = self._latest_activity(user["user_id"], feature_key)
 
         if feature is None:
             self.metrics.increment(
@@ -61,6 +62,7 @@ class EvaluationService:
             result = {
                 "feature_key": feature_key,
                 "user_id": user["user_id"],
+                "activity": activity,
                 "enabled": False,
                 "decision_source": "feature_not_found",
                 "score": None,
@@ -77,6 +79,7 @@ class EvaluationService:
             result = {
                 "feature_key": feature_key,
                 "user_id": user["user_id"],
+                "activity": activity,
                 "enabled": False,
                 "decision_source": "feature_disabled",
                 "score": None,
@@ -114,6 +117,7 @@ class EvaluationService:
                 result = {
                     "feature_key": feature_key,
                     "user_id": user["user_id"],
+                    "activity": activity,
                     "enabled": enabled,
                     "decision_source": "ml",
                     "score": score,
@@ -137,6 +141,7 @@ class EvaluationService:
         result = {
             "feature_key": feature_key,
             "user_id": user["user_id"],
+            "activity": activity,
             "enabled": enabled,
             "decision_source": "rollout",
             "score": None,
@@ -157,6 +162,20 @@ class EvaluationService:
         if self.evaluation_repository is None:
             return 0
         return self.evaluation_repository.delete_all()
+
+    def _latest_activity(self, user_id: str, feature_key: str) -> str | None:
+        events = self.event_repository.list(user_id=user_id, feature_key=feature_key)
+        if not events:
+            return None
+        latest = max(
+            events,
+            key=lambda event: (
+                event.timestamp.astimezone(timezone.utc)
+                if event.timestamp.tzinfo is not None
+                else event.timestamp.replace(tzinfo=timezone.utc)
+            ),
+        )
+        return latest.event_type or None
 
     @staticmethod
     def _resolve_ml_threshold(
@@ -237,6 +256,7 @@ class EvaluationService:
                 id=None,
                 feature_key=result["feature_key"],
                 user_id=result["user_id"],
+                activity=result.get("activity"),
                 enabled=bool(result["enabled"]),
                 decision_source=str(result["decision_source"]),
                 score=result.get("score"),
@@ -258,6 +278,7 @@ class EvaluationService:
             "id": record.id,
             "feature_key": record.feature_key,
             "user_id": record.user_id,
+            "activity": record.activity,
             "enabled": record.enabled,
             "decision_source": record.decision_source,
             "score": record.score,
