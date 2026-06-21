@@ -1266,6 +1266,13 @@ async function trainModel() {
   const release = setLoading("trainBtn", "Treinando...");
   try {
     const out = await api("/train", { method: "POST", body: JSON.stringify({}) });
+    if (out.status === 401) {
+      const message = "Treino exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
+      setStatus(message, out.data);
+      setModelStatus(message, out.data);
+      return;
+    }
+
     setStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
     setModelStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
     if (out.ok) {
