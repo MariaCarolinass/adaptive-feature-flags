@@ -19,18 +19,18 @@ Com a API rodando:
 ## Organização da tela
 
 1. **Resumo**
-- Mostra regras cadastradas, atividades registradas, estado do modelo e última atualização.
-- Exibe o retorno da última ação de forma simples.
-- Mantém detalhes técnicos recolhidos em "Ver detalhes da última ação".
+- Mostra regras, atividades, estado do modelo e última atualização.
+- Exibe o retorno da última ação de forma resumida.
+- Mantém os detalhes técnicos recolhidos em "Ver detalhes da última ação".
 
 2. **Insights**
 - Mostra indicadores principais de avaliação.
-- Compara decisões inteligentes com liberação gradual.
-- Exibe gráficos de liberação, origem da decisão e tendência de eventos.
+- Compara decisão por machine learning com liberação gradual.
+- Exibe gráficos de liberação, origem da decisão e tendência de atividades.
 
 3. **Regras**
 - Cria e atualiza regras de liberação.
-- Configura percentual de liberação, pontuação mínima, modo de liberação e status da regra.
+- Configura percentual de liberação, pontuação mínima, modo de liberação e status.
 - Mostra regras cadastradas em uma tabela filtrável.
 
 4. **Avaliação**
@@ -39,7 +39,7 @@ Com a API rodando:
 
 5. **Atividades**
 - Registra atividades individuais ou em lote.
-- Filtra atividades por usuário, regra e atividade.
+- Filtra por usuário, regra e atividade.
 - Mostra atividades recentes com paginação.
 
 6. **Treinos**

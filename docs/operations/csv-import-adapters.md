@@ -1,6 +1,6 @@
 # Importação CSV: Adapters
 
-Este guia explica a diferença entre os adapters do script `scripts/import_events_csv.py`, com foco no modo `generic`.
+Este guia resume os adapters do script `scripts/import_events_csv.py`.
 
 ## Visão geral
 

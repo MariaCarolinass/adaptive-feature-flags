@@ -13,22 +13,19 @@ uvicorn app.main:app --reload
 
 ## Comandos essenciais
 
-- Rodar testes: `pytest`
+- Testes: `pytest`
 - Healthcheck: `curl http://localhost:8000/health`
-- Listar features: `curl http://localhost:8000/features`
-- Treinar modelo: `curl -X POST http://localhost:8000/train`
+- Features: `curl http://localhost:8000/features`
+- Treino: `curl -X POST http://localhost:8000/train`
 
 ## Scripts do projeto
 
 ### `scripts/seed_demo.py`
 
-Uso: popular ambiente local rapidamente com dados sintéticos.
-
-Sem argumentos, o script importa todos os catálogos JSON do diretório [`dataset/`](../../dataset/) para manter os dados fora do código.
-Também aceita `--catalog` para apontar um JSON específico quando você quiser importar só um catálogo.
-Catálogos prontos: [`dataset/seed_demo_checkout_focus.json`](../../dataset/seed_demo_checkout_focus.json), [`dataset/seed_demo_growth_focus.json`](../../dataset/seed_demo_growth_focus.json), [`dataset/seed_demo_activation_focus.json`](../../dataset/seed_demo_activation_focus.json), [`dataset/seed_demo_retention_focus.json`](../../dataset/seed_demo_retention_focus.json) e [`dataset/seed_demo_auth_focus.json`](../../dataset/seed_demo_auth_focus.json).
-Os catálogos usam eventos específicos do contexto, por exemplo `checkout_upsell_shown`, `checkout_upsell_clicked`, `purchase_completed`, `onboarding_step_shown`, `onboarding_completed` e `weekly_digest_opened`.
-Esses eventos seguem a taxonomia descrita em [`docs/implementation/ml-decision-flow-in-depth.md`](../implementation/ml-decision-flow-in-depth.md), onde `VIEW_EVENT_TYPES`, `INTERMEDIATE_POSITIVE_EVENT_TYPES`, `TERMINAL_POSITIVE_EVENT_TYPES` e `POSITIVE_EVENT_TYPES` são explicados no contexto do treino e da decisão online.
+- Importa catálogos JSON do diretório [`dataset/`](../../dataset/).
+- Aceita `--catalog` para importar apenas um catálogo.
+- Catálogos prontos: `seed_demo_checkout_focus.json`, `seed_demo_growth_focus.json`, `seed_demo_activation_focus.json`, `seed_demo_retention_focus.json` e `seed_demo_auth_focus.json`.
+- Os eventos seguem a taxonomia descrita em [`docs/implementation/ml-decision-flow-in-depth.md`](../implementation/ml-decision-flow-in-depth.md).
 
 Comando:
 
@@ -46,8 +43,9 @@ Efeito:
 
 ### `scripts/import_events_csv.py`
 
-Uso: importar eventos de CSV para o schema canônico de eventos.
-O projeto pode ser testado com qualquer arquivo CSV compatível: no modo `generic`, basta mapear as colunas canônicas; no modo `ecommerce_dataset`, o CSV precisa seguir o contrato do dataset e-commerce.
+- Importa eventos de CSV para o schema canônico.
+- No modo `generic`, basta mapear as colunas canônicas.
+- No modo `ecommerce_dataset`, o CSV segue o contrato do dataset e-commerce.
 
 Comando (dataset e-commerce):
 
@@ -71,7 +69,7 @@ python3 scripts/import_events_csv.py \
 
 ### `scripts/build_user_features.py`
 
-Uso: gerar features por usuário a partir da tabela `events` e gravar em tabela SQL.
+- Gera features por usuário a partir da tabela `events`.
 
 Comando:
 
@@ -79,13 +77,11 @@ Comando:
 python3 scripts/build_user_features.py --output-table user_features
 ```
 
-Opção útil:
-
 - `--dry-run`: processa sem gravar na base.
 
 ### `scripts/test_model.py`
 
-Uso: comparar o modelo treinado com o baseline de rollout determinístico.
+- Compara o modelo treinado com o baseline de rollout determinístico.
 
 Comando:
 
@@ -95,12 +91,9 @@ python3 scripts/test_model.py \
   --rollout-percentage 10
 ```
 
-Saída principal:
+- Saída principal: acurácia, taxa positiva de machine learning versus rollout e métricas de negócio (`ML Engagement`, `Rollout Engagement`, `Uplift`).
 
-- acurácia e taxa positiva de ML vs rollout;
-- métricas de negócio (`ML Engagement`, `Rollout Engagement`, `Uplift`).
-
-## Variáveis de ambiente relevantes
+## Variáveis de ambiente
 
 - `DATABASE_URL`
 - `MODELS_DIR`
@@ -116,7 +109,7 @@ Saída principal:
 - `INTERMEDIATE_POSITIVE_EVENT_TYPES`
 - `TERMINAL_POSITIVE_EVENT_TYPES`
 
-## Ativando autenticação local
+## Autenticação local
 
 Exemplo no `.env`:
 
