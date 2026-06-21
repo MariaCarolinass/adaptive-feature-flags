@@ -65,6 +65,36 @@ def test_ingest_service_saves_events_in_batch(session_factory) -> None:
     assert all(event.properties.get("ab_variant") == "B" for event in saved)
 
 
+def test_ingest_service_keeps_duplicate_items_in_same_batch(session_factory) -> None:
+    event_repo = SqliteEventRepository(session_factory)
+    event_service = EventService(event_repo)
+    ingest_service = IngestService(event_service)
+
+    payload = [
+        {
+            "user_id": "u123",
+            "feature_key": "new_checkout",
+            "event_type": "clicked",
+            "timestamp": datetime(2026, 4, 22, 10, 0, tzinfo=timezone.utc),
+            "properties": {"device": "mobile"},
+        },
+        {
+            "user_id": "u123",
+            "feature_key": "new_checkout",
+            "event_type": "clicked",
+            "timestamp": datetime(2026, 4, 22, 10, 0, 1, tzinfo=timezone.utc),
+            "properties": {"device": "mobile"},
+        },
+    ]
+
+    result = ingest_service.ingest_events(source="web_app", events=payload)
+
+    assert result["saved_events"] == 2
+    assert result["rejected"] == 0
+    saved = event_service.list_events(feature_key="new_checkout")
+    assert len(saved) == 2
+
+
 def test_ingest_service_rejects_future_events(session_factory) -> None:
     event_repo = SqliteEventRepository(session_factory)
     feature_repo = SqliteFeatureRepository(session_factory)
