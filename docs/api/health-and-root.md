@@ -28,6 +28,8 @@ Exemplo de resposta:
 
 Snapshot das métricas de processo coletadas em memória (counters, gauges e timings).
 
+Quando `AUTH_ENABLED=true`, este endpoint segue a política padrão de autenticação da API, a menos que seja adicionado em `AUTH_EXEMPT_PATHS`.
+
 Exemplo de resposta:
 
 ```json
