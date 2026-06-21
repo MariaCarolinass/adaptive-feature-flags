@@ -83,13 +83,11 @@ class IngestService:
 
     @staticmethod
     def _has_valid_operational_metrics(properties: dict) -> bool:
-        validators = {
-            "latency_ms": lambda v: isinstance(v, (int, float)) and 0 <= float(v) <= 120000,
-            "error_rate": lambda v: isinstance(v, (int, float)) and 0.0 <= float(v) <= 1.0,
-            "cpu_pct": lambda v: isinstance(v, (int, float)) and 0.0 <= float(v) <= 100.0,
-            "mem_pct": lambda v: isinstance(v, (int, float)) and 0.0 <= float(v) <= 100.0,
-        }
-        for key, check in validators.items():
-            if key in properties and not check(properties[key]):
-                return False
+        latency_ms = properties.get("latency_ms")
+        if latency_ms is None:
+            return True
+        if not isinstance(latency_ms, (int, float)):
+            return False
+        if not 0 <= float(latency_ms) <= 120000:
+            return False
         return True

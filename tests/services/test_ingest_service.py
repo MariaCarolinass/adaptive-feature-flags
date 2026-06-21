@@ -97,7 +97,7 @@ def test_ingest_service_rejects_future_events(session_factory) -> None:
     assert result["rejected"] == 1
 
 
-def test_ingest_service_rejects_invalid_operational_metric(session_factory) -> None:
+def test_ingest_service_rejects_invalid_latency_metric(session_factory) -> None:
     event_repo = SqliteEventRepository(session_factory)
     event_service = EventService(event_repo)
     ingest_service = IngestService(event_service, experiment_service=_ExperimentService())
@@ -110,7 +110,7 @@ def test_ingest_service_rejects_invalid_operational_metric(session_factory) -> N
                 "feature_key": "new_checkout",
                 "event_type": "clicked",
                 "timestamp": datetime(2026, 4, 22, 10, 0, tzinfo=timezone.utc),
-                "properties": {"cpu_pct": 130.0},
+                "properties": {"latency_ms": 130000},
             }
         ],
     )
