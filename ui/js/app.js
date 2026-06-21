@@ -386,6 +386,83 @@ function setEventStatus(message, tone = "info") {
   target.dataset.tone = tone;
 }
 
+function setActionStatus(id, message, tone = "info") {
+  const target = $(id);
+  if (!target) return;
+  target.textContent = message;
+  target.dataset.tone = tone;
+}
+
+function normalizeNumberField(input) {
+  const raw = String(input.value ?? "").trim();
+  if (!raw) return;
+  const value = Number(raw.replace(",", "."));
+  if (!Number.isFinite(value)) return;
+
+  const stepRaw = String(input.step || "1").trim();
+  const step = stepRaw === "any" ? null : Number(stepRaw);
+  const minRaw = String(input.min ?? "").trim();
+  const maxRaw = String(input.max ?? "").trim();
+  const min = minRaw === "" ? null : Number(minRaw);
+  const max = maxRaw === "" ? null : Number(maxRaw);
+
+  let next = value;
+  if (Number.isFinite(min)) next = Math.max(min, next);
+  if (Number.isFinite(max)) next = Math.min(max, next);
+
+  let precision = 0;
+  if (step !== null && Number.isFinite(step)) {
+    const stepText = stepRaw;
+    if (stepText.includes("e-")) {
+      precision = Number(stepText.split("e-")[1] || 0);
+    } else if (stepText.includes(".")) {
+      precision = stepText.split(".")[1].length;
+    }
+    if (precision > 0) {
+      const factor = 10 ** precision;
+      next = Math.round(next * factor) / factor;
+    } else {
+      next = Math.round(next);
+    }
+  }
+
+  const formatted = precision > 0 ? next.toFixed(precision) : String(Math.round(next));
+  if (input.value !== formatted) {
+    input.value = formatted;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+}
+
+function stepNumberField(input, direction) {
+  const raw = String(input.value ?? "").trim();
+  const value = raw === "" ? Number(input.min || 0) : Number(raw.replace(",", "."));
+  if (!Number.isFinite(value)) return;
+
+  const stepRaw = String(input.step || "1").trim();
+  const step = stepRaw === "any" ? 1 : Number(stepRaw);
+  if (!Number.isFinite(step) || step <= 0) return;
+
+  const minRaw = String(input.min ?? "").trim();
+  const maxRaw = String(input.max ?? "").trim();
+  const min = minRaw === "" ? null : Number(minRaw);
+  const max = maxRaw === "" ? null : Number(maxRaw);
+
+  let next = value + (direction * step);
+  if (Number.isFinite(min)) next = Math.max(min, next);
+  if (Number.isFinite(max)) next = Math.min(max, next);
+
+  let precision = 0;
+  if (stepRaw.includes("e-")) {
+    precision = Number(stepRaw.split("e-")[1] || 0);
+  } else if (stepRaw.includes(".")) {
+    precision = stepRaw.split(".")[1].length;
+  }
+  const formatted = precision > 0 ? next.toFixed(precision) : String(Math.round(next));
+  input.value = formatted;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 async function api(path, options = {}) {
   const started = performance.now();
   try {
@@ -1182,11 +1259,13 @@ async function upsertFeature() {
     const payload = featurePayload();
     if (!payload.name || !payload.key) {
       setStatus("Informe o nome e o identificador da regra.");
+      setActionStatus("featureActionStatus", "Informe o nome e o identificador da regra.", "bad");
       return;
     }
     const list = await api("/features");
     if (!list.ok || !Array.isArray(list.data)) {
       setStatus(`Erro ao consultar regras (${list.status})`, list.data);
+      setActionStatus("featureActionStatus", `Erro ao consultar regras (${list.status})`, "bad");
       return;
     }
     const existing = list.data.find((f) => f.key === payload.key);
@@ -1206,7 +1285,16 @@ async function upsertFeature() {
       markDashboardSync();
     }
 
-    setStatus(out.ok ? `Regra salva em ${out.elapsed}ms.` : `Erro ao salvar regra (${out.status})`, out.data);
+    if (out.status === 401) {
+      const message = "Salvar regra exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
+      setStatus(message, out.data);
+      setActionStatus("featureActionStatus", message, "bad");
+      return;
+    }
+
+    const message = out.ok ? `Regra salva em ${out.elapsed}ms.` : `Erro ao salvar regra (${out.status})`;
+    setStatus(message, out.data);
+    setActionStatus("featureActionStatus", message, out.ok ? "ok" : "bad");
   } finally { release(); }
 }
 
@@ -1270,11 +1358,14 @@ async function trainModel() {
       const message = "Treino exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
       setStatus(message, out.data);
       setModelStatus(message, out.data);
+      setActionStatus("trainActionStatus", message, "bad");
       return;
     }
 
-    setStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
-    setModelStatus(out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`, out.data);
+    const message = out.ok ? `Treinamento concluído em ${out.elapsed}ms` : `Erro no treinamento (${out.status})`;
+    setStatus(message, out.data);
+    setModelStatus(message, out.data);
+    setActionStatus("trainActionStatus", message, out.ok ? "ok" : "bad");
     if (out.ok) {
       state.modelStatus = out.data;
       await loadModelRuns(5, { silent: true });
@@ -1321,6 +1412,7 @@ async function evaluateUsers() {
     const users = $("users").value.split("\n").map((u) => u.trim()).filter(Boolean);
     if (!users.length) {
       setStatus("Informe ao menos um usuário.");
+      setActionStatus("evaluationActionStatus", "Informe ao menos um usuário.", "bad");
       return;
     }
 
@@ -1337,6 +1429,12 @@ async function evaluateUsers() {
           method: "POST",
           body: JSON.stringify({ feature_key: featureKey, user: { user_id: userId } }),
         });
+        if (out.status === 401) {
+          const message = "Avaliar usuários exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
+          setStatus(message, out.data);
+          setActionStatus("evaluationActionStatus", message, "bad");
+          return;
+        }
         output.push(out.ok ? out.data : { user_id: userId, feature_key: featureKey, enabled: false, decision_source: `error_${out.status}` });
       }
     }
@@ -1350,7 +1448,9 @@ async function evaluateUsers() {
     drawCharts();
     markDashboardSync();
     renderDashboardTables();
-    setStatus(`Avaliação concluída para ${users.length} usuários e ${output.length} regras.`);
+    const message = `Avaliação concluída para ${users.length} usuários e ${output.length} regras.`;
+    setStatus(message);
+    setActionStatus("evaluationActionStatus", message, "ok");
     await loadEvaluations();
   } finally { release(); }
 }
@@ -1453,10 +1553,18 @@ async function sendEvent() {
         }),
       });
 
-    setStatus(
-      out.ok ? (batchCount === 1 ? "Registro concluído." : `Registros concluídos em lote: ${batchCount}.`) : `Erro ao registrar atividade (${out.status})`,
-      out.data,
-    );
+    if (out.status === 401) {
+      const message = "Registrar atividade exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
+      setStatus(message, out.data);
+      setEventStatus(message, "bad");
+      return;
+    }
+
+    const message = out.ok
+      ? (batchCount === 1 ? "Registro concluído." : `Registros concluídos em lote: ${batchCount}.`)
+      : `Erro ao registrar atividade (${out.status})`;
+    setStatus(message, out.data);
+    setEventStatus(message, out.ok ? "ok" : "bad");
     if (out.ok) {
       if (batchCount === 1 && out.data) {
         state.events = [
@@ -1555,6 +1663,7 @@ async function createExperiment() {
     const payload = experimentPayload();
     if (!payload.name || !payload.feature_key || !payload.primary_metric_event) {
       setStatus("Informe nome, regra e atividade principal do teste.");
+      setActionStatus("experimentActionStatus", "Informe nome, regra e atividade principal do teste.", "bad");
       return;
     }
 
@@ -1564,11 +1673,21 @@ async function createExperiment() {
     });
 
     if (!out.ok) {
-      setStatus(`Erro ao criar teste (${out.status})`, out.data);
+      if (out.status === 401) {
+        const message = "Criar teste exige autenticação. Gere um JWT em /auth/token e salve-o como adaptiveFlags.token no navegador.";
+        setStatus(message, out.data);
+        setActionStatus("experimentActionStatus", message, "bad");
+        return;
+      }
+      const message = `Erro ao criar teste (${out.status})`;
+      setStatus(message, out.data);
+      setActionStatus("experimentActionStatus", message, "bad");
       return;
     }
 
-    setStatus(`Teste criado em ${out.elapsed}ms.`, out.data);
+    const message = `Teste criado em ${out.elapsed}ms.`;
+    setStatus(message, out.data);
+    setActionStatus("experimentActionStatus", message, "ok");
     if (out.data?.id) {
       state.selectedExperimentId = out.data.id;
       localStorage.setItem("adaptiveFlags.experimentId", String(out.data.id));
@@ -1578,6 +1697,7 @@ async function createExperiment() {
 }
 
 function bind() {
+  const pendingSpinnerAdjustments = new WeakMap();
   const on = (id, fn) => {
     const el = $(id);
     if (!el) return;
@@ -1649,6 +1769,30 @@ function bind() {
     btn.addEventListener("click", () => {
       const next = btn.dataset.page;
       requestAnimationFrame(() => setPage(next));
+    });
+  });
+  document.querySelectorAll('input[type="number"]').forEach((input) => {
+    input.addEventListener("blur", () => normalizeNumberField(input));
+    input.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      const rect = input.getBoundingClientRect();
+      const spinnerWidth = Math.min(28, rect.width * 0.18);
+      if (event.clientX < rect.right - spinnerWidth) return;
+      const direction = event.clientY < (rect.top + rect.bottom) / 2 ? 1 : -1;
+      pendingSpinnerAdjustments.set(input, {
+        direction,
+        before: input.value,
+      });
+    });
+    input.addEventListener("click", () => {
+      const pending = pendingSpinnerAdjustments.get(input);
+      if (!pending) return;
+      requestAnimationFrame(() => {
+        if (input.value === pending.before) {
+          stepNumberField(input, pending.direction);
+        }
+        pendingSpinnerAdjustments.delete(input);
+      });
     });
   });
   window.addEventListener("hashchange", () => setPage(window.location.hash.replace(/^#/, ""), { fromHash: true }));
