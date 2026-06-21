@@ -1,0 +1,122 @@
+{
+  "model_version": "v7",
+  "artifact_path": "storage/models/v7.joblib",
+  "generated_files": [
+    "storage/figures/ml-report/01_benchmark_metrics.png",
+    "storage/figures/ml-report/02_confusion_matrix.png",
+    "storage/figures/ml-report/03_target_distribution.png",
+    "storage/figures/ml-report/04_threshold_curve.png",
+    "storage/figures/ml-report/05_feature_importance.png",
+    "storage/figures/ml-report/06_event_timeline.png",
+    "storage/figures/ml-report/07_feature_distributions.png"
+  ],
+  "skipped": [
+    "A/B summary chart skipped because there were not enough events for both variants."
+  ],
+  "training_run": {
+    "id": 7,
+    "model_version": "v7",
+    "trained_at": "2026-06-21 03:57:21.045624",
+    "status": "ready",
+    "duration_ms": 347,
+    "snapshot": {
+      "model_name": "logistic_regression",
+      "model_version": "v7",
+      "trained_at": "2026-06-21T03:57:21.045624+00:00",
+      "metrics": {
+        "accuracy": 0.7647058823529411,
+        "precision": 0.8518518518518519,
+        "recall": 0.7419354838709677,
+        "f1_score": 0.7931034482758621,
+        "roc_auc": 0.8580645161290322,
+        "best_threshold_by_f1": 0.3,
+        "confusion_matrix": {
+          "true_negative": 16,
+          "false_positive": 4,
+          "false_negative": 8,
+          "true_positive": 23
+        }
+      },
+      "artifact_path": "storage/models/v7.joblib",
+      "process": {
+        "total_events": 1650,
+        "unique_users": 251,
+        "positive_events": 321,
+        "duration_ms": 347,
+        "feature_columns": [
+          "unique_features",
+          "active_days",
+          "avg_hour",
+          "avg_day_of_week",
+          "hours_since_last_event",
+          "events_per_day"
+        ],
+        "benchmark": [
+          {
+            "model_name": "random_forest",
+            "accuracy": 0.7254901960784313,
+            "precision": 0.7428571428571429,
+            "recall": 0.8387096774193549,
+            "f1_score": 0.7878787878787878,
+            "roc_auc": 0.8064516129032259,
+            "best_threshold_by_f1": 0.39999999999999997,
+            "confusion_matrix": {
+              "true_negative": 11,
+              "false_positive": 9,
+              "false_negative": 5,
+              "true_positive": 26
+            }
+          },
+          {
+            "model_name": "logistic_regression",
+            "accuracy": 0.7647058823529411,
+            "precision": 0.8518518518518519,
+            "recall": 0.7419354838709677,
+            "f1_score": 0.7931034482758621,
+            "roc_auc": 0.8580645161290322,
+            "best_threshold_by_f1": 0.3,
+            "confusion_matrix": {
+              "true_negative": 16,
+              "false_positive": 4,
+              "false_negative": 8,
+              "true_positive": 23
+            }
+          },
+          {
+            "model_name": "gradient_boosting",
+            "accuracy": 0.7058823529411765,
+            "precision": 0.7222222222222222,
+            "recall": 0.8387096774193549,
+            "f1_score": 0.7761194029850746,
+            "roc_auc": 0.8016129032258065,
+            "best_threshold_by_f1": 0.25,
+            "confusion_matrix": {
+              "true_negative": 10,
+              "false_positive": 10,
+              "false_negative": 5,
+              "true_positive": 26
+            }
+          }
+        ],
+        "dataset_profile": {
+          "rows": 251,
+          "train_rows": 200,
+          "test_rows": 51,
+          "positive_rate": 0.601593625498008,
+          "class_distribution": {
+            "1": 151,
+            "0": 100
+          }
+        }
+      },
+      "threshold_policy": {
+        "modes_supported": [
+          "fixed",
+          "match_rollout",
+          "maximize_f1"
+        ],
+        "fallback_policy": "rollout_deterministic"
+      }
+    }
+  }
+}
