@@ -9,6 +9,7 @@ Documentação funcional dos endpoints expostos pela API.
 - `activities.md`
 - `events-and-ingest.md`
 - `evaluation.md`
+- `evaluations.md`
 - `training-and-model-status.md`
 - `experiments.md`
 
@@ -23,8 +24,7 @@ Documentação funcional dos endpoints expostos pela API.
 Se `AUTH_ENABLED=true`, os endpoints protegidos exigem JWT bearer token.
 
 - Header aceito:
-
-- `Authorization: Bearer <sua-chave>`
+  - `Authorization: Bearer <sua-chave>`
 
 Paths isentos por padrão:
 
@@ -34,7 +34,6 @@ Paths isentos por padrão:
 - `/docs`
 - `/redoc`
 - `/openapi.json`
-- `/metrics`
 
 Emissão de token:
 
