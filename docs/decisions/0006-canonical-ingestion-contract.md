@@ -14,13 +14,19 @@ Padronizar `POST /ingest/events` com payload canônico:
 - `source` obrigatório.
 - `events[]` com `user_id`, `feature_key`, `event_type`, `timestamp`, `properties`.
 
-Validação mínima no serviço: `source` não vazio e lote com pelo menos um evento.
+Validação no serviço:
+
+- `source` não vazio;
+- lote com pelo menos um evento;
+- `timestamp` em UTC e não futuro;
+- `properties` como objeto;
+- `latency_ms`, quando presente, entre `0` e `120000`.
 
 ## Consequências
 
 - Positivas: contrato único para múltiplas integrações e menor acoplamento.
-- Negativas: validações semânticas avançadas ficam para etapas posteriores.
-- Riscos: ingestão de eventos inconsistentes se cliente não seguir convenções de `event_type`.
+- Negativas: o contrato permanece canônico, mas a validação ainda é propositalmente simples.
+- Riscos: ingestão de eventos inconsistentes se cliente não seguir convenções de `event_type` e `properties`.
 
 ## Alternativas consideradas
 
