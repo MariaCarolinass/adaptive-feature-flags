@@ -2,31 +2,31 @@
 
 ## Contexto
 
-Sistemas digitais modernos precisam liberar funcionalidades de forma gradual para reduzir risco operacional e impacto negativo para usuários. O Adaptive Feature Flags nasce como iniciativa de P&D para estudar decisões de rollout orientadas por eventos de uso, indo além de estratégias fixas baseadas apenas em percentual.
+Sistemas digitais precisam liberar funcionalidades de forma gradual para reduzir risco operacional e impacto negativo para usuários. O Adaptive Feature Flags nasce como iniciativa de P&D para estudar liberação orientada por eventos de uso e machine learning, indo além de estratégias fixas baseadas apenas em percentual.
 
 ## O que é este MVP
 
 Uma API experimental para validar:
 
-- Decisão de rollout com fallback seguro.
-- Arquitetura evolutiva orientada a serviços.
-- Integração entre eventos operacionais e mecanismos de decisão.
+- decisão de rollout com fallback seguro;
+- arquitetura evolutiva orientada a serviços;
+- integração entre eventos operacionais e mecanismos de decisão.
 
 ## Estratégia Event-Driven e Experimentação
 
-O projeto adota uma estratégia orientada a eventos: sinais de uso (`view`, `addtocart`, `transaction`, etc.) alimentam o processo de decisão de rollout e o ciclo de aprendizado do modelo.
+O projeto adota uma estratégia orientada a eventos: sinais de uso alimentam o processo de decisão de rollout e o ciclo de aprendizado do modelo.
 
 Nesta fase, a experimentação é tratada como capacidade progressiva:
 
 - Base atual: rollout determinístico + avaliação por machine learning + fallback seguro.
-- Objetivo de evolução: ampliar suporte a práticas de experimentação, incluindo cenários de teste A/B com maior governança.
+- Objetivo de evolução: ampliar suporte a práticas de experimentação, incluindo testes A/B com maior governança.
 
 Referência complementar: `experimentation-and-ab-testing.md`.
 
 ## O que o projeto é
 
 - API experimental para apoiar decisões de rollout.
-- Iniciativa de Pesquisa e Desenvolvimento.
+- Iniciativa de pesquisa e desenvolvimento.
 - Prova de conceito para conectar sinais de uso a decisões operacionais.
 - Base evolutiva para versões futuras.
 
