@@ -2,71 +2,43 @@
 
 ## Papel no projeto
 
-O Adaptive Feature Flags nasce com foco em decisões de rollout orientadas por eventos (Event-Driven). A experimentação é parte central da evolução do produto, mas com escopo intencionalmente incremental no MVP.
+O Adaptive Feature Flags usa experimentação para validar se uma mudança realmente melhora o comportamento observado. No MVP, isso complementa o rollout gradual e a decisão por machine learning.
 
-## Relação entre Event-Driven e A/B testing
+## Relação entre eventos e teste A/B
 
-- **Event-Driven**: coleta e usa sinais comportamentais reais para apoiar decisões.
-- **A/B testing**: compara variantes para medir impacto causal em métricas de negócio.
+- `Orientado a eventos`: usa sinais reais de uso para apoiar decisões.
+- `Teste A/B`: compara variantes para medir impacto em uma métrica de negócio.
 
-```mermaid
-flowchart LR
-    A[Eventos de uso] --> B[Base Event-Driven]
-    B --> C[Decisão operacional de rollout]
-    B --> D[Análise de experimentação]
-    D --> E[Hipótese A/B]
-    E --> F[Decisão de evolução do rollout]
-```
+No produto, isso serve para:
 
-No contexto deste projeto, eventos são a base para ambos:
+- entender se uma mudança performa melhor do que a atual;
+- reduzir risco antes de ampliar uma liberação;
+- apoiar decisões de rollout com evidência.
 
-- Tomada de decisão operacional (habilitar ou não feature por usuário).
-- Geração de evidências para experimentação e recomendação de rollout.
+## O que o MVP oferece hoje
 
-## Por que comparar A/B
+- rollout determinístico por percentual;
+- ingestão de eventos com registro de variante quando há experimento ativo;
+- atribuição estável de usuário para A ou B;
+- avaliação por machine learning com fallback seguro;
+- resumo do experimento com amostras, taxa de sucesso e decisão.
 
-A comparação A/B é útil porque transforma opinião em evidência prática.
+## O que ainda não faz parte do MVP
 
-- Mostra se uma variante realmente melhora a métrica escolhida.
-- Reduz o risco de liberar uma mudança pior para toda a base.
-- Ajuda a decidir com dados antes de escalar.
-- Permite entender se a nova experiência funciona melhor do que a atual.
+- A/B/n nativo;
+- significância estatística formal;
+- guardrails automáticos;
+- dashboard completo de experimentação.
 
-No produto, isso faz sentido porque:
+## Por que isso importa
 
-- a decisão é por usuário e por regra;
-- a variante é estável;
-- a atividade de sucesso é definida;
-- a decisão final só sai quando há volume suficiente.
-
-## O que o MVP já oferece para experimentação
-
-- Rollout determinístico por percentual.
-- Coleta e ingestão canônica de eventos.
-- Avaliação por machine learning com fallback seguro.
-- Recomendação estratégica de rollout por feature.
-
-## O que ainda não é um framework A/B completo
-
-- Gestão nativa de variantes (A/B/n) com alocação por experimento.
-- Cálculo estatístico de significância e intervalos de confiança.
-- Regras de parada automática e guardrails formais.
-- Dashboard de experimentos, auditoria e governança avançada.
+A comparação A/B ajuda a transformar opinião em evidência prática. Em vez de decidir apenas por intuição, o produto passa a observar o efeito real de uma variante sobre a métrica escolhida.
 
 ## Direção de evolução
 
-1. Introduzir modelo explícito de experimento (experimento, variante, hipótese, métricas-alvo).
-2. Padronizar telemetria para análise causal.
-3. Adicionar avaliação estatística e critérios de decisão.
-4. Integrar recomendação de rollout com estado do experimento.
+1. Modelar hipóteses e métricas de forma explícita.
+2. Ampliar a análise causal.
+3. Adicionar critérios formais de parada.
+4. Integrar experimentação com a evolução do rollout.
 
-```mermaid
-flowchart TD
-    A[MVP atual<br/>rollout + machine learning + fallback] --> B[Fase 1<br/>modelo explícito de experimento]
-    B --> C[Fase 2<br/>telemetria e análise causal]
-    C --> D[Fase 3<br/>significância, guardrails e governança]
-```
-
-## Mensagem de posicionamento
-
-O projeto não concorre, nesta fase, com plataformas completas de experimentação. Ele estabelece a base técnica para decisões de rollout orientadas por eventos e prepara o caminho para capacidades mais robustas de teste A/B.
+Detalhes técnicos do fluxo, cálculo e critérios de decisão estão em [`docs/implementation/experiment-decision-flow.md`](../implementation/experiment-decision-flow.md).
