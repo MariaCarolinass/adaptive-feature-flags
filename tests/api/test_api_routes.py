@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.core.config import settings
 
 
 def test_health_endpoint_returns_ok() -> None:
@@ -90,13 +91,29 @@ def test_security_headers_present() -> None:
         assert response.headers.get("referrer-policy") == "no-referrer"
 
 
+def test_read_routes_remain_public_when_auth_is_enabled(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "auth_jwt_secret", "secret")
+    monkeypatch.setattr(settings, "auth_issuer_key", "issuer")
+
+    with TestClient(app, base_url="http://localhost") as client:
+        for path in ("/activities", "/features", "/events", "/evaluations", "/experiments", "/model/status", "/model/runs", "/metrics"):
+            response = client.get(path)
+            assert response.status_code == 200, path
+
+        train = client.post("/train", json={})
+        assert train.status_code == 401
+
+
 def test_ingest_events_batch_returns_saved_count(monkeypatch) -> None:
     from app.api.v1.routes import ingest as ingest_route
+
+    captured = {}
 
     monkeypatch.setattr(
         ingest_route.ingest_service,
         "ingest_events",
-        lambda **_kwargs: {"saved_events": 2, "rejected": 0},
+        lambda **kwargs: captured.update(kwargs) or {"saved_events": 2, "rejected": 0},
     )
 
     payload = {
@@ -120,13 +137,34 @@ def test_ingest_events_batch_returns_saved_count(monkeypatch) -> None:
     }
 
     with TestClient(app, base_url="http://localhost") as client:
-        response = client.post("/ingest/events", json=payload)
+        response = client.post("/ingest/events", json=payload, headers={"X-Forwarded-For": "203.0.113.10"})
         assert response.status_code == 201
         assert response.json() == {"saved_events": 2, "rejected": 0}
+        assert captured["client_id"] == "203.0.113.10"
 
 
 def test_ingest_events_batch_validates_payload() -> None:
     payload = {"source": "web_app", "events": []}
+
+    with TestClient(app, base_url="http://localhost") as client:
+        response = client.post("/ingest/events", json=payload)
+        assert response.status_code == 422
+
+
+def test_ingest_events_batch_rejects_payload_above_limit() -> None:
+    payload = {
+        "source": "web_app",
+        "events": [
+            {
+                "user_id": f"u{i}",
+                "feature_key": "new_checkout",
+                "event_type": "clicked",
+                "timestamp": "2026-04-22T10:00:00Z",
+                "properties": {"device": "mobile"},
+            }
+            for i in range(1001)
+        ],
+    }
 
     with TestClient(app, base_url="http://localhost") as client:
         response = client.post("/ingest/events", json=payload)
