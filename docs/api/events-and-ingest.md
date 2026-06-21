@@ -10,12 +10,12 @@ Request:
 {
   "source": "web_app",
   "user_id": "user_123",
-  "feature_key": "new_checkout",
-  "event_type": "viewed_feature",
+  "feature_key": "checkout_upsell",
+  "event_type": "checkout_upsell_shown",
   "timestamp": "2026-05-23T12:00:00Z",
   "properties": {
-    "activity_name": "Visualizou a funcionalidade",
-    "page": "checkout"
+    "activity_name": "Viu oferta no checkout",
+    "page": "cart"
   }
 }
 ```
@@ -40,21 +40,21 @@ Request:
   "events": [
     {
       "user_id": "user_123",
-      "feature_key": "new_checkout",
-      "event_type": "viewed_feature",
+      "feature_key": "checkout_upsell",
+      "event_type": "checkout_upsell_shown",
       "timestamp": "2026-05-23T12:00:00Z",
       "properties": {
-        "activity_name": "Visualizou a funcionalidade",
-        "page": "checkout"
+        "activity_name": "Viu oferta no checkout",
+        "page": "cart"
       }
     },
     {
       "user_id": "user_123",
-      "feature_key": "new_checkout",
-      "event_type": "addtocart",
+      "feature_key": "checkout_upsell",
+      "event_type": "checkout_upsell_clicked",
       "timestamp": "2026-05-23T12:01:10Z",
       "properties": {
-        "activity_name": "Adicionou ao carrinho",
+        "activity_name": "Clicou na oferta do checkout",
         "platform": "ios"
       }
     }
@@ -65,7 +65,7 @@ Request:
 Observação:
 
 - `event_type` guarda o identificador técnico da atividade.
-- O rótulo de exibição pode ser salvo em `properties.activity_name`.
+- O nome amigável pode ser salvo em `properties.activity_name`.
 
 Response `201`:
 
@@ -80,10 +80,6 @@ Regras de robustez aplicadas na ingestão:
 
 - Eventos com timestamp no futuro são rejeitados.
 - Campos obrigatórios vazios/inválidos são rejeitados.
-- Métricas operacionais opcionais em `properties` são validadas:
-  - `latency_ms` entre `0` e `120000`
-  - `error_rate` entre `0` e `1`
-  - `cpu_pct` entre `0` e `100`
-  - `mem_pct` entre `0` e `100`
+- `latency_ms` em `properties`, quando presente, deve ficar entre `0` e `120000`.
 - Quando houver experimento A/B ativo para a `feature_key`, a API anexa `ab_variant` no evento persistido.
 - A API continua processando o lote e retorna `saved_events` e `rejected`.
