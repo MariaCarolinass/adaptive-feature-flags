@@ -24,14 +24,14 @@ class FeatureCreate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "Novo checkout",
-                "key": "new_checkout",
-                "description": "Versão nova do checkout",
+                "name": "Checkout Upsell",
+                "key": "checkout_upsell",
+                "description": "Oferta incremental no checkout",
                 "enabled": True,
-                "rollout_percentage": 25,
+                "rollout_percentage": 45,
                 "ml_enabled": True,
-                "ml_threshold_mode": "fixed",
-                "ml_threshold_value": 0.2,
+                "ml_threshold_mode": "maximize_f1",
+                "ml_threshold_value": 0.1,
             }
         }
     )
@@ -54,11 +54,11 @@ class FeatureResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "name": "Novo checkout",
-                "key": "new_checkout",
-                "description": "Versão nova do checkout",
+                "name": "Checkout Upsell",
+                "key": "checkout_upsell",
+                "description": "Oferta incremental no checkout",
                 "enabled": True,
-                "rollout_percentage": 25,
+                "rollout_percentage": 45,
                 "ml_enabled": True,
                 "ml_threshold_mode": "match_rollout",
                 "ml_threshold_value": 0.1,

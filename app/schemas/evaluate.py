@@ -18,7 +18,7 @@ class EvaluateRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "feature_key": "new_checkout",
+                "feature_key": "checkout_upsell",
                 "user": {
                     "user_id": "user_123"
                 }
@@ -42,9 +42,9 @@ class EvaluateResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "feature_key": "new_checkout",
+                "feature_key": "checkout_upsell",
                 "user_id": "user_123",
-                "activity": "viewed_feature",
+                "activity": "checkout_upsell_shown",
                 "enabled": True,
                 "decision_source": "ml",
                 "score": 0.81,
@@ -52,7 +52,7 @@ class EvaluateResponse(BaseModel):
                 "threshold_mode": "fixed",
                 "experiment": {
                     "experiment_id": 1,
-                    "experiment_name": "Checkout A/B",
+                    "experiment_name": "Checkout Upsell A/B",
                     "variant": "B"
                 },
                 "model_version": "v1",
@@ -70,9 +70,9 @@ class EvaluationHistoryItem(EvaluateResponse):
             "example": {
                 "id": 12,
                 "created_at": "2026-06-04T14:19:00+00:00",
-                "feature_key": "new_checkout",
+                "feature_key": "checkout_upsell",
                 "user_id": "user_123",
-                "activity": "viewed_feature",
+                "activity": "checkout_upsell_shown",
                 "enabled": True,
                 "decision_source": "ml",
                 "score": 0.81,
@@ -80,7 +80,7 @@ class EvaluationHistoryItem(EvaluateResponse):
                 "threshold_mode": "fixed",
                 "experiment": {
                     "experiment_id": 1,
-                    "experiment_name": "Checkout A/B",
+                    "experiment_name": "Checkout Upsell A/B",
                     "variant": "B"
                 },
                 "model_version": "v1",

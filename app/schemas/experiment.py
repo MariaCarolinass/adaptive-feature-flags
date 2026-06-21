@@ -14,9 +14,9 @@ class ExperimentCreate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "Novo checkout A/B",
-                "feature_key": "new_checkout",
-                "primary_metric_event": "viewed_feature",
+                "name": "Checkout Upsell A/B",
+                "feature_key": "checkout_upsell",
+                "primary_metric_event": "checkout_upsell_shown",
                 "min_samples_per_variant": 100,
                 "min_lift": 0.02,
                 "enabled": True,
@@ -40,9 +40,9 @@ class ExperimentResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "name": "Novo checkout A/B",
-                "feature_key": "new_checkout",
-                "primary_metric_event": "viewed_feature",
+                "name": "Checkout Upsell A/B",
+                "feature_key": "checkout_upsell",
+                "primary_metric_event": "checkout_upsell_shown",
                 "min_samples_per_variant": 100,
                 "min_lift": 0.02,
                 "enabled": True,
@@ -71,9 +71,9 @@ class ExperimentEvaluationResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "experiment_id": 1,
-                "experiment_name": "Novo checkout A/B",
-                "feature_key": "new_checkout",
-                "primary_metric_event": "viewed_feature",
+                "experiment_name": "Checkout Upsell A/B",
+                "feature_key": "checkout_upsell",
+                "primary_metric_event": "checkout_upsell_shown",
                 "variant_stats": {
                     "A": {"samples": 120, "positives": 40},
                     "B": {"samples": 118, "positives": 54}

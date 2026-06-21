@@ -12,9 +12,9 @@ class ActivityCreate(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "key": "viewed_feature",
-                "name": "Visualizou a funcionalidade",
-                "description": "Usuário abriu ou viu a funcionalidade",
+                "key": "checkout_upsell_shown",
+                "name": "Viu oferta no checkout",
+                "description": "Oferta incremental exibida no checkout",
                 "enabled": True,
             }
         }
@@ -34,9 +34,9 @@ class ActivityResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": 1,
-                "key": "viewed_feature",
-                "name": "Visualizou a funcionalidade",
-                "description": "Usuário abriu ou viu a funcionalidade",
+                "key": "checkout_upsell_shown",
+                "name": "Viu oferta no checkout",
+                "description": "Oferta incremental exibida no checkout",
                 "enabled": True,
                 "created_at": "2026-06-18T12:00:00Z",
                 "updated_at": "2026-06-18T12:00:00Z",

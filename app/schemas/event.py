@@ -16,8 +16,8 @@ class EventCreate(BaseModel):
     properties: dict[str, str | int | float | bool | None] = Field(
         default_factory=dict,
         description=(
-            "Propriedades adicionais da atividade. Suporta métricas operacionais opcionais: "
-            "`latency_ms`, `error_rate`, `cpu_pct`, `mem_pct`."
+            "Propriedades adicionais da atividade. Suporta a métrica operacional opcional "
+            "`latency_ms`."
         ),
     )
 
@@ -25,13 +25,13 @@ class EventCreate(BaseModel):
         json_schema_extra={
             "example": {
                 "user_id": "user_123",
-                "feature_key": "new_checkout",
-                "event_type": "viewed_feature",
+                "feature_key": "checkout_upsell",
+                "event_type": "checkout_upsell_shown",
                 "timestamp": "2026-05-23T12:00:00Z",
                 "source": "web_app",
                 "properties": {
-                    "activity_name": "Visualizou a funcionalidade",
-                    "page": "checkout"
+                    "activity_name": "Viu oferta no checkout",
+                    "page": "cart"
                 }
             }
         }
@@ -52,13 +52,13 @@ class EventResponse(BaseModel):
             "example": {
                 "id": 10,
                 "user_id": "user_123",
-                "feature_key": "new_checkout",
-                "event_type": "viewed_feature",
+                "feature_key": "checkout_upsell",
+                "event_type": "checkout_upsell_shown",
                 "timestamp": "2026-05-23T12:00:00Z",
                 "source": "web_app",
                 "properties": {
-                    "activity_name": "Visualizou a funcionalidade",
-                    "page": "checkout"
+                    "activity_name": "Viu oferta no checkout",
+                    "page": "cart"
                 },
             }
         }

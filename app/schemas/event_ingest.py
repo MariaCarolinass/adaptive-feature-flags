@@ -14,8 +14,8 @@ class CanonicalEventItemIngest(BaseModel):
     properties: dict[str, EventPropertyValue] = Field(
         default_factory=dict,
         description=(
-            "Propriedades adicionais da atividade. Métricas operacionais opcionais suportadas: "
-            "`latency_ms` (0-120000), `error_rate` (0-1), `cpu_pct` (0-100), `mem_pct` (0-100)."
+            "Propriedades adicionais da atividade. Métrica operacional opcional suportada: "
+            "`latency_ms` (0-120000)."
         ),
     )
 
@@ -23,10 +23,10 @@ class CanonicalEventItemIngest(BaseModel):
         json_schema_extra={
             "example": {
                 "user_id": "user_123",
-                "feature_key": "new_checkout",
-                "event_type": "viewed_feature",
+                "feature_key": "checkout_upsell",
+                "event_type": "checkout_upsell_shown",
                 "timestamp": "2026-05-07T12:00:00Z",
-                "properties": {"activity_name": "Visualizou a funcionalidade", "page": "checkout"},
+                "properties": {"activity_name": "Viu oferta no checkout", "page": "cart"},
             }
         }
     )
@@ -47,17 +47,17 @@ class CanonicalEventBatchIngest(BaseModel):
                 "events": [
                     {
                         "user_id": "user_123",
-                        "feature_key": "new_checkout",
-                        "event_type": "viewed_feature",
+                        "feature_key": "checkout_upsell",
+                        "event_type": "checkout_upsell_shown",
                         "timestamp": "2026-05-07T12:00:00Z",
-                        "properties": {"activity_name": "Visualizou a funcionalidade", "page": "checkout"},
+                        "properties": {"activity_name": "Viu oferta no checkout", "page": "cart"},
                     },
                     {
                         "user_id": "user_123",
-                        "feature_key": "new_checkout",
-                        "event_type": "addtocart",
+                        "feature_key": "checkout_upsell",
+                        "event_type": "checkout_upsell_clicked",
                         "timestamp": "2026-05-07T12:01:10Z",
-                        "properties": {"activity_name": "Adição ao carrinho", "platform": "ios"},
+                        "properties": {"activity_name": "Clicou na oferta do checkout", "platform": "ios"},
                     },
                 ]
             }
