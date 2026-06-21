@@ -5,6 +5,8 @@ Este documento detalha a ingestão canônica, a validação de eventos e a persi
 ## 1) Ingestão e persistência
 
 A ingestão canônica aceita um lote de eventos e grava no banco antes de qualquer treino.
+O contrato atual limita cada requisição a `1000` eventos.
+A ingestão também aplica limite de taxa por cliente/IP para reduzir abuso por várias requisições pequenas.
 
 ```mermaid
 flowchart TD
@@ -22,7 +24,8 @@ flowchart TD
 Regras importantes da ingestão:
 
 - `source` não pode estar vazio;
-- o lote precisa ter ao menos um evento;
+- o lote precisa ter ao menos um evento e no máximo `1000` itens;
+- o serviço bloqueia excesso de eventos por cliente/IP em janela deslizante;
 - `timestamp` precisa estar em UTC e não pode ser futuro;
 - `properties` precisa ser um objeto;
 - `latency_ms`, quando presente, precisa ficar entre `0` e `120000`.
