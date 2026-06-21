@@ -10,7 +10,8 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 - Contratos da API: `api/README.md`
 - Decisões técnicas (ADRs): `decisions/README.md`
 - Implementações críticas de código: `implementation/critical-code-paths.md`
-- Fluxo detalhado de ML e decisão online: `implementation/ml-decision-flow-in-depth.md`
+- Fluxo detalhado de machine learning e avaliação: `implementation/ml-decision-flow-in-depth.md`
+- Fluxo técnico de experimentação e A/B: `implementation/experiment-decision-flow.md`
 - Guia de módulos de suporte (core/integrations/observability/sdk): `implementation/module-guide-core-and-support.md`
 - SDK e exemplos de integração: `implementation/sdk-and-examples.md`
 - Operação local e rotina de desenvolvimento: `operations/development-playbook.md`
@@ -36,6 +37,7 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 ### `implementation/`
 - Mapa dos pontos do código que exigem maior cuidado para evolução.
 - Módulos de suporte, SDK, exemplos e fluxos críticos.
+- Fluxos detalhados de machine learning e experimentação.
 
 ### `operations/`
 - Setup local, execução, testes e checklist operacional.
