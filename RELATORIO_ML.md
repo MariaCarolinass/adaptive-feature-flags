@@ -118,6 +118,10 @@ O `timestamp` é um dos campos mais importantes do projeto porque permite transf
 
 Esse campo tira o sistema de uma visão estática e o coloca em uma visão temporal do comportamento. Na avaliação, ele ajuda a encontrar a atividade mais recente; no treino, permite criar agregações temporais por usuário.
 
+Uma forma direta de visualizar esse comportamento ao longo do tempo é observar a evolução do volume de eventos por dia:
+
+<img src="storage/figures/ml-report/06_event_timeline.png" alt="Eventos ao longo do tempo" width="800"/>
+
 ### Como o `latency_ms` é utilizado
 
 O campo `latency_ms` aparece dentro de `properties` e representa uma latência sintética associada ao evento. Ele não entra como feature principal no modelo atual, mas cumpre funções importantes:
@@ -270,6 +274,10 @@ Em termos de implementação, o alvo é derivado de `POSITIVE_EVENT_TYPES`, que 
 
 Do ponto de vista técnico, essa definição é uma **regra de rotulagem heurística**. Ela funciona como um **proxy label** porque usa um critério operacional observável para aproximar o conceito de “usuário com comportamento positivo”.
 
+Esse comportamento pode ser visto no gráfico abaixo, que resume a distribuição das classes no dataset usado pelo treino:
+
+<img src="storage/figures/ml-report/03_target_distribution.png" alt="Distribuição da variável alvo" width="800"/>
+
 ## Como as variáveis são calculadas
 
 O `FeatureBuilder` transforma o histórico de eventos em uma linha por usuário. As features geradas pelo builder incluem:
@@ -319,6 +327,10 @@ Na fase de treino atual, o modelo usa este subconjunto de variáveis:
 
 Essas colunas foram escolhidas porque resumem comportamento de forma compacta, sem depender de alta dimensionalidade.
 
+Os histogramas abaixo ajudam a visualizar como essas features se distribuem entre os usuários. Eles mostram, por exemplo, se há caudas longas, concentração em poucos valores ou dispersão suficiente para o classificador explorar:
+
+<img src="storage/figures/ml-report/07_feature_distributions.png" alt="Distribuição das features" width="800"/>
+
 ## Relação entre as variáveis
 
 As variáveis têm interpretações complementares:
@@ -362,6 +374,10 @@ O vencedor é definido pelo maior `f1_score` no conjunto de teste. Essa métrica
 
 O `f1_score` ajuda a equilibrar essas duas falhas.
 
+A comparação entre os candidatos fica mais clara quando os indicadores são vistos juntos. O gráfico abaixo sintetiza as métricas do benchmark executado no último treino:
+
+<img src="storage/figures/ml-report/01_benchmark_metrics.png" alt="Benchmark de modelos" width="800"/>
+
 ### Fluxo de escolha do modelo
 
 O modelo que vai liberar a feature não é escolhido manualmente; ele passa por um pipeline de treino, comparação e persistência:
@@ -392,6 +408,14 @@ Nesse fluxo:
 - o melhor modelo é o que obtém maior `f1_score`;
 - o artefato só passa a ser usado em `/evaluate` quando o status fica `ready` e o `artifact_path` existe.
 
+A leitura do resultado também fica mais objetiva quando a matriz de confusão entra em cena. Ela mostra, em números absolutos, onde o modelo acerta e onde ainda erra:
+
+<img src="storage/figures/ml-report/02_confusion_matrix.png" alt="Matriz de confusão" width="600"/>
+
+Como o modelo final é linear, também vale olhar os coeficientes absolutos das variáveis usadas na inferência. Esse gráfico mostra quais atributos pesam mais na decisão e ajuda a conectar o comportamento agregado do usuário com o score produzido pelo classificador:
+
+<img src="storage/figures/ml-report/05_feature_importance.png" alt="Importância dos atributos" width="800"/>
+
 ## Decisão online e fallback
 
 Na avaliação em `/evaluate`, a regra é:
@@ -412,6 +436,10 @@ O threshold da feature pode seguir três modos:
 - `maximize_f1`: usa o melhor threshold encontrado no treino, resultado do **threshold tuning**.
 
 Esse fluxo mostra o ciclo completo de decisão: o sistema treina, escolhe o melhor modelo, salva o artefato, aplica inferência em `/evaluate` e só então decide se libera a feature. O modelo não é uma peça isolada; ele é a etapa intermediária entre o histórico do usuário e a decisão operacional.
+
+O ajuste do ponto de corte também pode ser observado graficamente. A curva abaixo mostra por que o threshold ótimo ficou em torno de `0.30` e não em `0.50`:
+
+<img src="storage/figures/ml-report/04_threshold_curve.png" alt="Curva de threshold" width="800"/>
 
 ## Explicação dos fluxos auxiliares do produto
 
