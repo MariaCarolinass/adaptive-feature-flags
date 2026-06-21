@@ -70,21 +70,10 @@ Impacto:
 
 ## `sdk/` e `examples/`
 
-Papel:
+Resumo:
 
 - Cliente Python e exemplos de integração externa com a API.
 
-Arquivos:
+Leia também:
 
-- `sdk/adaptiveflags/client.py`: cliente HTTP simples (`evaluate`, `track`, `train`, `model_status`).
-- `examples/*.py`: uso prático em app externa e fluxo de cliente.
-
-Status:
-
-- Não fazem parte do runtime da API.
-- São importantes para adoção, testes manuais e referência de integração.
-
-Impacto:
-
-- Mudanças de contrato da API devem refletir nesses arquivos para evitar exemplos quebrados.
-
+- [`docs/implementation/sdk-and-examples.md`](sdk-and-examples.md)
