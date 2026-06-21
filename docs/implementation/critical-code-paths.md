@@ -6,13 +6,14 @@ Este documento mapeia implementações importantes para manutenção e evoluçã
 
 - Entrada HTTP: `app/api/v1/routes/evaluate.py`
 - Regra central: `app/domain/services/evaluation_service.py`
-- Dependencias: `feature_service`, `event_service`, `training_service`, `predictor`
+- Dependencias: `feature_repository`, `event_repository`, `model_repository`, `experiment_service`, `predictor`
 
 Pontos de cuidado:
 
 - Não quebrar fallback para `decision_source="rollout"`.
 - Garantir baixa latência.
 - Evitar side effects não deterministas no caminho online.
+- Manter o mapeamento do `activity` a partir do evento mais recente do mesmo `user_id` e `feature_key`.
 
 ## 2) Treino de modelo
 
@@ -36,6 +37,7 @@ Pontos de cuidado:
 
 - Idempotência e validação de payload em lote.
 - Mapeamento consistente de `event_type` e do catálogo de atividades para pipeline de treino.
+- Preservar `source` no evento persistido e respeitar a deduplicação por identidade lógica do evento.
 
 ## 4) CRUD de features
 
