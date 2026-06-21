@@ -63,7 +63,7 @@ erDiagram
         datetime created_at
     }
 
-    MODELS_METADATA {
+    MODEL_METADATA {
         int id PK
         string status
         string model_name
@@ -121,6 +121,7 @@ Armazena as feature flags cadastradas na plataforma.
 ### 2. `events`
 
 Armazena os eventos canônicos coletados da plataforma e da ingestão em lote.
+O repositório usa `user_id`, `feature_key`, `event_type` e `source` armazenado em `properties` para identificar regravações do mesmo evento lógico; `updated_at` registra a última mutação e participa da ordenação.
 
 | Atributo | Tipo | Restrições | Finalidade |
 | --- | --- | --- | --- |

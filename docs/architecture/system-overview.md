@@ -8,11 +8,14 @@ O projeto usa arquitetura em camadas (DDD lite):
 - `app/domain`: entidades, contratos de repositório e regras de negócio.
 - `app/infrastructure`: persistência SQLite, machine learning, observabilidade e integrações.
 
-Objetivo principal: manter decisão de feature flag previsível e resiliente, com machine learning opcional e fallback determinístico.
+Objetivo principal: manter decisão de feature flag previsível e resiliente, com machine learning opcional, fallback determinístico e catálogos legíveis para atividades e experimentos.
 
 ## Componentes principais
 
 - API FastAPI (`app/main.py`, `app/api/v1/routes`).
+- Catálogo de atividades (`app/api/v1/routes/activities.py`).
+- Feature flags e configuração de rollout (`app/api/v1/routes/features.py`).
+- Experimentos A/B-lite (`app/api/v1/routes/experiments.py`).
 - Serviços de domínio (`app/domain/services`).
 - Repositórios SQLite (`app/infrastructure/repositories`).
 - Pipeline de machine learning (`app/infrastructure/ml`).
@@ -22,22 +25,24 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 ## Fluxo de alto nível
 
 1. Eventos chegam por `POST /events` ou `POST /ingest/events`.
-2. Dados são persistidos e usados para treino via `POST /train`.
-3. `POST /evaluate` decide `enabled=true/false` por usuário.
-4. Se machine learning não estiver pronto/válido, aplica rollout determinístico.
+2. Catálogos de atividades, features e experimentos mantêm a leitura humana e a governança dos dados.
+3. Dados persistidos alimentam o treino via `POST /train`.
+4. `POST /evaluate` decide `enabled=true/false` por usuário usando ML quando disponível.
+5. Se machine learning não estiver pronto/válido, aplica rollout determinístico.
 
 ```mermaid
 flowchart LR
     A[App Externa] --> B[POST /events ou /ingest/events]
-    B --> C[(SQLite Events)]
-    C --> D[POST /train]
-    D --> E[(Artefato de modelo)]
-    A --> F[POST /evaluate]
-    E --> F
-    C --> F
-    F --> G{Modelo pronto e aplicável?}
-    G -- Sim --> H[Decisão por machine learning]
-    G -- Não --> I[Fallback rollout determinístico]
+    A --> C[Catálogos /activities, /features e /experiments]
+    B --> D[(SQLite events)]
+    D --> E[POST /train]
+    E --> F[(model_metadata / model_training_runs)]
+    A --> G[POST /evaluate]
+    D --> G
+    F --> G
+    G --> H{Modelo pronto e feature permite ML?}
+    H -- Sim --> I[Decisão por machine learning]
+    H -- Não --> J[Fallback rollout determinístico]
 ```
 
 ## Princípios de design

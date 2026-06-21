@@ -13,6 +13,8 @@ Combinar dois mecanismos de decisão:
 
 - `app/api/v1/routes/evaluate.py`: entrada HTTP.
 - `app/domain/services/evaluation_service.py`: regra principal de decisão.
+- `app/domain/services/event_service.py`: leitura dos eventos persistidos.
+- `app/domain/services/experiment_service.py`: contexto de experimento quando ativo.
 - `app/domain/services/training_service.py`: orquestração de treino e status de modelo.
 - `app/infrastructure/ml/feature_builder.py`: engenharia de features para inferência.
 - `app/infrastructure/ml/predictor.py`: cálculo de score.
@@ -35,8 +37,8 @@ Se qualquer condição falhar, a API usa rollout determinístico.
 2. Se não existir: retorna `enabled=false` e `decision_source="feature_not_found"`.
 3. Se existir mas estiver desabilitada: retorna `enabled=false` e `decision_source="feature_disabled"`.
 4. Se `ml_enabled=true` e modelo `ready`, tenta inferência.
-5. Se score válido: retorna `decision_source="ml"` e habilita quando `score >= 0.1`.
-6. Se score indisponível/falhar: aplica rollout determinístico com `decision_source="rollout"`.
+5. Se score válido, resolve o threshold da feature e retorna `decision_source="ml"` quando `score >= threshold`.
+6. Se score indisponível/falhar ou o modelo não estiver aplicável: aplica rollout determinístico com `decision_source="rollout"`.
 
 ```mermaid
 flowchart TD
@@ -49,10 +51,17 @@ flowchart TD
     G -- Não --> H[Calcular bucket rollout]
     G -- Sim --> I[Tentar score de machine learning]
     I --> J{Score válido?}
-    J -- Sim --> K[enabled = score >= 0.1 / source=ml]
+    J -- Sim --> K[Resolver threshold da feature]
+    K --> L[enabled = score >= threshold / source=ml]
     J -- Não --> H
-    H --> L[enabled = bucket < rollout_percentage / source=rollout]
+    H --> M[enabled = bucket < rollout_percentage / source=rollout]
 ```
+
+## Como a atividade é resolvida
+
+- A decisão busca o evento mais recente para o mesmo `user_id` e `feature_key`.
+- O campo `activity` na resposta recebe o `event_type` desse evento.
+- Se não houver evento compatível, `activity` fica `null`.
 
 ## Como funciona o rollout determinístico
 
@@ -69,6 +78,14 @@ Isso garante consistência: mesmo par `(user_id, feature_key)` mantém a mesma d
 - Endpoint: `POST /train`.
 - Fonte: eventos persistidos.
 - Saída: artefato em `MODELS_DIR` + metadados com status `ready`.
+
+## Como o threshold é escolhido
+
+O threshold usado em ML depende de `ml_threshold_mode`:
+
+- `fixed`: usa `ml_threshold_value`.
+- `match_rollout`: aproxima o corte para manter a cobertura do rollout.
+- `maximize_f1`: usa o melhor threshold encontrado no treino.
 
 ## Condições típicas de fallback para rollout
 
