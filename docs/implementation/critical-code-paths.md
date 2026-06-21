@@ -2,7 +2,7 @@
 
 Este documento mapeia implementações importantes para manutenção e evolução segura.
 
-## 1) Decisão online de feature (`/evaluate`)
+## 1) Avaliação de feature (`/evaluate`)
 
 - Entrada HTTP: `app/api/v1/routes/evaluate.py`
 - Regra central: `app/domain/services/evaluation_service.py`
