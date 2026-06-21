@@ -1,16 +1,29 @@
-# ML e Decisão Online (Detalhado)
+# Machine Learning e Avaliação em Tempo de Requisição
 
-Este documento explica como o código de ML funciona hoje, do treino até a decisão online no endpoint `POST /evaluate`.
+Este documento explica como o fluxo de machine learning funciona hoje, separando ingestão, treino e avaliação em tempo de requisição.
 
-## 1) Visão geral do fluxo
+## 1) Visão geral
 
-1. Eventos são persistidos (`/events` ou `/ingest/events`).
-2. `POST /train` chama `TrainingService.train()`.
-3. O treino transforma eventos brutos em features agregadas por usuário e gera artefato `.joblib` com modelo + metadados + colunas.
-4. `POST /evaluate` usa `EvaluationService.evaluate()`.
-5. Se o modelo estiver pronto e a feature permitir ML, calcula score; se não, aplica fallback de rollout determinístico.
+O fluxo do sistema tem três partes distintas:
 
-O ponto principal é que o modelo não lê nomes de eventos isolados. Ele lê sinais agregados por usuário, construídos a partir da taxonomia de eventos do produto:
+- ingestão e persistência de eventos;
+- treino batch do modelo;
+- avaliação em tempo de requisição por usuário.
+
+```mermaid
+flowchart LR
+    A[App externa] --> B[POST /events ou /ingest/events]
+    B --> C[(events)]
+    A --> D[POST /train]
+    C --> D
+    D --> E[(model_metadata)]
+    D --> F[(model_training_runs)]
+    A --> G[POST /evaluate]
+    C --> G
+    E --> G
+```
+
+O ponto principal é que o modelo não lê eventos isolados. Ele usa sinais agregados por usuário, construídos a partir da taxonomia de atividades do produto e da camada de machine learning:
 
 - `VIEW_EVENT_TYPES`: exposição.
 - `INTERMEDIATE_POSITIVE_EVENT_TYPES`: interesse no meio do funil.
@@ -26,150 +39,141 @@ Arquivos centrais:
 - `app/domain/services/evaluation_service.py`
 - `app/infrastructure/ml/predictor.py`
 
+## 2) Ingestão e persistência
+
+A ingestão canônica aceita um lote de eventos e grava no banco antes de qualquer treino.
+
 ```mermaid
 flowchart TD
-    A[POST /events ou POST /ingest/events] --> B[(Tabela events)]
-    B --> C[POST /train]
-    C --> D[TrainingService.train]
-    D --> E[trainer.train_from_events]
-    E --> F[FeatureBuilder.build_from_dataframe]
-    F --> G[RandomForestClassifier.fit]
-    G --> H[ModelSerializer.save artifact .joblib]
-    H --> I[(model_metadata status=ready + artifact_path)]
-
-    J[POST /evaluate] --> K[EvaluationService.evaluate]
-    K --> L{Feature existe e enabled?}
-    L -- não --> M[Retorna disabled: feature_not_found/feature_disabled]
-    L -- sim --> N{ml_enabled e modelo ready?}
-    N -- não --> O[Fallback rollout determinístico]
-    N -- sim --> P[Busca eventos do usuário]
-    P --> Q[FeatureBuilder para 1 usuário]
-    Q --> R[Carrega feature_columns do artifact]
-    R --> S[ModelPredictor.predict_score]
-    S --> T{Score valido?}
-    T -- não --> O
-    T -- sim --> U[enabled = score >= 0.1 source=ml]
-    O --> V[enabled = bucket < rollout_percentage source=rollout]
+    A[POST /events ou /ingest/events] --> B{Payload válido?}
+    B -- não --> C[reject]
+    B -- sim --> D[IngestService]
+    D --> E{Experimento ativo?}
+    E -- sim --> F[Anexa ab_variant no properties]
+    E -- não --> G[Sem alteração]
+    F --> H[EventService.create_event]
+    G --> H
+    H --> I[(events)]
 ```
 
-## 2) Como o treino funciona
+Regras importantes da ingestão:
 
-Entrada:
+- `source` não pode estar vazio;
+- o lote precisa ter ao menos um evento;
+- `timestamp` precisa estar em UTC e não pode ser futuro;
+- `properties` precisa ser um objeto;
+- `latency_ms`, quando presente, precisa ficar entre `0` e `120000`.
 
-- `TrainingService.train()` lê todos os eventos do repositório.
-- Valida que existe ao menos um evento.
-- Conta métricas de processo (`total_events`, `unique_users`, `positive_events`).
+Na persistência de eventos:
 
-Transformação para dataset:
+- a identidade lógica usa `user_id`, `feature_key`, `event_type` e `source`;
+- se o mesmo evento lógico chegar de novo, o repositório atualiza o registro existente;
+- `updated_at` registra a última mutação e ajuda na ordenação.
 
-- `train_from_events()` monta DataFrame com:
-  - `user_id`
-  - `event_type`
-  - `timestamp`
-  - `feature_key`
-- `FeatureBuilder.build_from_dataframe()` agrega por usuário e cria features numéricas.
+## 3) Treino do modelo
 
-Na UI e no catálogo, `event_type` aparece como atividade; no pipeline de treino ele continua sendo o identificador técnico do evento.
+O treino é batch. Ele lê os eventos persistidos, agrega por usuário e compara candidatos de modelo.
 
-Features usadas no treino (MVP):
+```mermaid
+flowchart TD
+    A[POST /train] --> B[TrainingService.train]
+    B --> C[train_from_events]
+    C --> D[FeatureBuilder.build_from_dataframe]
+    D --> E{Candidatos}
+    E --> F[RandomForestClassifier]
+    E --> G[LogisticRegression]
+    E --> H[GradientBoostingClassifier]
+    F --> I[Comparar f1_score]
+    G --> I
+    H --> I
+    I --> J[Selecionar melhor modelo]
+    J --> K[ModelSerializer.save]
+    K --> L[(model_metadata)]
+    K --> M[(model_training_runs)]
+```
 
-Essas colunas são calculadas por usuário a partir dos eventos brutos:
+O treino funciona assim:
 
-- `unique_features`: quantidade de `feature_key` distintos acessados pelo usuário.
-- `active_days`: quantidade de dias diferentes com evento.
-- `avg_hour`: média da hora dos eventos do usuário.
-- `avg_day_of_week`: média do dia da semana dos eventos.
-- `hours_since_last_event`: horas desde o último evento até o timestamp de referência do treino.
-- `events_per_day`: total de eventos dividido pelos dias ativos do usuário.
+1. `TrainingService.train()` lê todos os eventos do repositório.
+2. `train_from_events()` monta um DataFrame com `user_id`, `event_type`, `timestamp` e `feature_key`.
+3. `FeatureBuilder.build_from_dataframe()` agrega por usuário e cria as features numéricas.
+4. O treino compara três candidatos:
+   - `RandomForestClassifier`
+   - `LogisticRegression`
+   - `GradientBoostingClassifier`
+5. O vencedor é o que tem maior `f1_score` no conjunto de teste.
+6. O artefato `.joblib` e os metadados são persistidos.
 
-Treinamento:
+Features usadas no MVP:
 
-- Modelos candidatos:
-  - `RandomForestClassifier(class_weight="balanced", random_state=42)`
-  - `LogisticRegression(class_weight="balanced", random_state=42, max_iter=1000)`
-  - `GradientBoostingClassifier(random_state=42)`
-- Seleção: o treino escolhe automaticamente o candidato com maior `f1_score` no conjunto de teste.
-- Split: `train_test_split(..., stratify=y)`.
-- Regras mínimas:
-  - ao menos 2 classes em `y`;
-  - ao menos 2 amostras por classe.
+- `unique_features`
+- `active_days`
+- `avg_hour`
+- `avg_day_of_week`
+- `hours_since_last_event`
+- `events_per_day`
 
-Saída:
+Regras mínimas:
 
-- Artefato salvo por `ModelSerializer.save()` em `MODELS_DIR` (`v1.joblib`).
-- Metadados persistidos com status `ready`.
+- precisa haver pelo menos 2 classes em `y`;
+- precisa haver pelo menos 2 amostras por classe.
 
-## 3) Como a decisão no `/evaluate` funciona
+## 4) Avaliação em tempo de requisição em `/evaluate`
 
 `EvaluationService.evaluate(feature_key, user)` segue esta ordem:
 
-1. Feature não existe:
-  - retorna `enabled=false`, `decision_source="feature_not_found"`.
-2. Feature desabilitada:
-  - retorna `enabled=false`, `decision_source="feature_disabled"`.
-3. Se `ml_enabled=true` e modelo `ready` com `artifact_path`:
-  - tenta score de ML.
-4. Se score válido:
-  - `enabled = score >= 0.1`
-  - `decision_source="ml"`.
-5. Se qualquer etapa de ML falhar:
-  - fallback para rollout determinístico (`decision_source="rollout"`).
+1. Busca a feature.
+2. Se não existir: `decision_source="feature_not_found"`.
+3. Se existir mas estiver desabilitada: `decision_source="feature_disabled"`.
+4. Se `ml_enabled=true` e o modelo estiver `ready` com `artifact_path`, tenta inferência.
+5. Se a inferência funcionar, resolve o threshold da feature e decide por machine learning.
+6. Se qualquer etapa falhar, faz fallback determinístico por rollout.
 
-### 3.1 Cálculo de score
+```mermaid
+flowchart TD
+    A[POST /evaluate] --> B[Buscar feature]
+    B --> C{Existe?}
+    C -- não --> D[feature_not_found / enabled=false]
+    C -- sim --> E{enabled?}
+    E -- não --> F[feature_disabled / enabled=false]
+    E -- sim --> G{ml_enabled e modelo ready?}
+    G -- não --> H[Fallback rollout]
+    G -- sim --> I[Buscar eventos do usuário]
+    I --> J[FeatureBuilder para 1 usuário]
+    J --> K[Carregar feature_columns]
+    K --> L[ModelPredictor.predict_score]
+    L --> M{Score válido?}
+    M -- não --> H
+    M -- sim --> N[Resolver threshold da feature]
+    N --> O[enabled = score >= threshold]
+    H --> P[enabled = bucket < rollout_percentage]
+```
 
-`_predict_score()`:
+Como a atividade é resolvida:
 
-1. Busca eventos do usuário.
-2. Constrói DataFrame desse usuário.
-3. Usa `FeatureBuilder` para gerar uma linha agregada.
-4. Lê `feature_columns` do artefato com `ModelSerializer.load_feature_columns()`.
-5. Valida colunas esperadas.
-6. `ModelPredictor.predict_score(payload)` retorna probabilidade da classe positiva.
-7. Score final é limitado para `[0.0, 1.0]`.
+- a avaliação busca o evento mais recente do mesmo `user_id` e `feature_key`;
+- o campo `activity` da resposta recebe o `event_type` desse evento;
+- se não houver evento compatível, `activity` fica `null`.
 
-Qualquer erro nessa cadeia retorna `None` e ativa fallback.
+Como o fallback determinístico funciona:
 
-### 3.2 Fallback determinístico
+- calcula `sha256(f"{user_id}:{feature_key}")`;
+- converte para bucket `0..99`;
+- habilita quando `bucket < rollout_percentage`.
 
-Quando não há decisão por ML:
+Como o threshold é escolhido:
 
-- Calcula bucket estável com `sha256(f"{user_id}:{feature_key}") % 100`.
-- Habilita se `bucket < rollout_percentage`.
+- `fixed`: usa `ml_threshold_value`;
+- `match_rollout`: aproxima o corte para acompanhar a cobertura do rollout;
+- `maximize_f1`: usa o melhor threshold encontrado no treino.
 
-Isso garante consistência por usuário/feature entre chamadas.
+Na interface:
 
-### 3.3 Como o threshold da decisão é escolhido
+- `Pontuação mínima` é o threshold configurado na regra quando o modo está em `Corte fixo`;
+- `Percentual de liberação` define a cobertura alvo quando o modo está em `Acompanhar cobertura`;
+- `Automática` usa o melhor corte encontrado no treino.
 
-A feature controla a política de threshold com `ml_threshold_mode`:
-
-- `fixed`: usa `ml_threshold_value` salvo na própria feature.
-- `match_rollout`: deriva o threshold do `rollout_percentage`, para manter a experiência alinhada ao rollout atual.
-- `maximize_f1`: usa o `best_threshold_by_f1` calculado no treino e salvo no metadata do modelo.
-
-Na prática:
-
-- a feature define a política;
-- o treino calcula métricas e o melhor threshold do modelo;
-- a avaliação escolhe o caminho mais adequado na hora da decisão.
-
-O treino não sobrescreve a feature com esse threshold. Ele salva o resultado do modelo e o metadata correspondente.
-
-### 3.4 Como interpretar na interface
-
-Na página de regras, a interface traduz essa política para termos mais simples:
-
-- `Pontuação mínima` é o corte usado quando o modo está em `Corte fixo`.
-- O valor inicial exibido no formulário é `0.1`, mas ele pode ser alterado por regra.
-- `Percentual de liberação` define a cobertura alvo quando o modo está em `Acompanhar cobertura`.
-- `Automática` usa o melhor corte encontrado no treino do modelo.
-
-Em resumo:
-
-- `corte` = o limite de pontuação que decide se a regra libera ou bloqueia;
-- `Pontuação mínima` = o valor fixo desse corte quando o modo é manual;
-- `Percentual de liberação` = a fração de usuários que podem ser liberados no modo gradual.
-
-## 4) Taxonomia de eventos
+## 5) Taxonomia de eventos
 
 Os conjuntos vêm de `app/core/event_types.py`, que normaliza os valores definidos em `settings`:
 
@@ -178,7 +182,7 @@ Os conjuntos vêm de `app/core/event_types.py`, que normaliza os valores definid
 - `INTERMEDIATE_POSITIVE_EVENT_TYPES`
 - `TERMINAL_POSITIVE_EVENT_TYPES`
 
-### 4.1 O que cada grupo significa
+### 5.1 O que cada grupo significa
 
 | Grupo | Papel no produto | Exemplos | Uso na ML |
 | --- | --- | --- | --- |
@@ -187,7 +191,7 @@ Os conjuntos vêm de `app/core/event_types.py`, que normaliza os valores definid
 | `TERMINAL_POSITIVE_EVENT_TYPES` | conversão final | `transaction`, `purchase_completed`, `subscription_upgraded` | vira `is_terminal_positive` e alimenta `purchase_events` |
 | `POSITIVE_EVENT_TYPES` | qualquer evento de sucesso relevante | união dos sinais acima + eventos como `addtocart` | vira `is_positive`, `positive_events` e o `target` |
 
-### 4.2 Como isso vira features
+### 5.2 Como isso vira features
 
 `FeatureBuilder` marca cada evento com flags booleanas e depois agrega por usuário.
 As colunas principais geradas pelo builder são:
@@ -210,7 +214,7 @@ O target do MVP é binário:
 
 Isso permite treinar um modelo que aprenda padrões de engajamento e conversão a partir da telemetria realista do seed ou da ingestão.
 
-## 5) Observabilidade no fluxo de ML
+## 6) Observabilidade no fluxo de machine learning
 
 No treino:
 
