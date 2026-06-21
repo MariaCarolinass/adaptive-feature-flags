@@ -47,7 +47,7 @@ Cada item expõe:
 - `key`: identificador técnico usado em eventos e avaliação;
 - `description`: descrição curta opcional;
 - `rollout_percentage`: percentual de liberação gradual;
-- `ml_enabled`: se a avaliação pode usar ML;
+- `ml_enabled`: se a avaliação pode usar machine learning;
 - `ml_threshold_mode`: política do corte de liberação.
 
 ## `GET /features/{feature_id}`

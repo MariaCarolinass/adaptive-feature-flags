@@ -2,9 +2,18 @@
 
 ## `POST /events`
 
-Registra um evento individual.
+Registra uma atividade individual.
 
-Request:
+Campos obrigatórios:
+
+- `source`
+- `user_id`
+- `feature_key`
+- `event_type`
+- `timestamp`
+- `properties`
+
+Exemplo:
 
 ```json
 {
@@ -22,15 +31,17 @@ Request:
 
 ## `GET /events`
 
-Lista eventos com filtros opcionais:
+Lista atividades com filtros opcionais:
 
 - `user_id`
 - `feature_key`
-- `event_type` - identificador técnico da atividade
+- `event_type`
+
+`event_type` é o identificador técnico da atividade.
 
 ## `POST /ingest/events`
 
-Ingestão canônica em lote para integração com sistemas externos.
+Ingressa um lote de atividades.
 
 Request:
 
@@ -62,12 +73,7 @@ Request:
 }
 ```
 
-Observação:
-
-- `event_type` guarda o identificador técnico da atividade.
-- O nome amigável pode ser salvo em `properties.activity_name`.
-
-Response `201`:
+Response:
 
 ```json
 {
@@ -76,10 +82,23 @@ Response `201`:
 }
 ```
 
-Regras de robustez aplicadas na ingestão:
+## Regras de validação
 
-- Eventos com timestamp no futuro são rejeitados.
-- Campos obrigatórios vazios/inválidos são rejeitados.
-- `latency_ms` em `properties`, quando presente, deve ficar entre `0` e `120000`.
-- Quando houver experimento A/B ativo para a `feature_key`, a API anexa `ab_variant` no evento persistido.
-- A API continua processando o lote e retorna `saved_events` e `rejected`.
+- `source` não pode estar vazio.
+- O lote deve conter ao menos um evento.
+- `user_id`, `feature_key` e `event_type` não podem estar vazios.
+- `properties` deve ser um objeto.
+- `timestamp` deve ser `datetime` com timezone.
+- `timestamp` não pode estar no futuro.
+- `latency_ms`, quando presente em `properties`, deve ficar entre `0` e `120000`.
+
+## Comportamento
+
+- A API processa o lote até o fim e conta quantos itens foram salvos e rejeitados.
+- Cada item válido é persistido individualmente.
+- O contrato base de ingestão não inclui `ab_variant`; esse campo só aparece quando há experimento ativo e a ingestão anexa a variante.
+
+## Observações
+
+- O nome amigável da atividade pode ser salvo em `properties.activity_name`.
+- O valor em `event_type` continua sendo o identificador técnico usado pelo sistema.
