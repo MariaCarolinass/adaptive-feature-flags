@@ -13,7 +13,7 @@ Request:
 
 ```json
 {
-  "feature_key": "new_checkout",
+  "feature_key": "checkout_upsell",
   "user": {
     "user_id": "user_123"
   }
@@ -24,9 +24,9 @@ Exemplo de resposta com machine learning:
 
 ```json
 {
-  "feature_key": "new_checkout",
+  "feature_key": "checkout_upsell",
   "user_id": "user_123",
-  "activity": "viewed_feature",
+  "activity": "checkout_upsell_shown",
   "enabled": true,
   "decision_source": "ml",
   "score": 0.42,
@@ -34,7 +34,7 @@ Exemplo de resposta com machine learning:
   "threshold_mode": "fixed",
   "experiment": {
     "experiment_id": 1,
-    "experiment_name": "Checkout CTA A/B",
+    "experiment_name": "Checkout Upsell A/B",
     "variant": "B"
   },
   "model_version": "v1"
@@ -45,15 +45,15 @@ Exemplo de resposta com machine learning:
 
 - `fixed`
 - `match_rollout`
-- `maximize_f1` (usa threshold calibrado salvo no treino)
+- `maximize_f1` (usa o melhor threshold encontrado no treino)
 
 Exemplo de resposta com fallback:
 
 ```json
 {
-  "feature_key": "new_checkout",
+  "feature_key": "checkout_upsell",
   "user_id": "user_123",
-  "activity": "viewed_feature",
+  "activity": "checkout_upsell_shown",
   "enabled": false,
   "decision_source": "rollout",
   "score": null,
@@ -68,44 +68,7 @@ Valores possíveis de `decision_source`:
 - `ml`
 - `rollout`
 
-`activity` indica a atividade mais recente do usuário para a regra avaliada.
+`activity` indica o identificador técnico da atividade mais recente encontrada para aquele `user_id` e `feature_key`.
 Quando não houver evento compatível, o campo pode vir `null`.
 
-## `GET /evaluations`
-
-Retorna o histórico salvo no backend, do mais recente para o mais antigo.
-
-Query params:
-
-- `limit` - quantidade máxima de itens retornados, padrão `1000`
-
-Exemplo de resposta:
-
-```json
-[
-  {
-    "id": 12,
-    "created_at": "2026-06-04T14:19:00+00:00",
-    "feature_key": "new_checkout",
-    "user_id": "user_123",
-    "activity": "viewed_feature",
-    "enabled": true,
-    "decision_source": "ml",
-    "score": 0.81,
-    "threshold": 0.2,
-    "threshold_mode": "fixed",
-    "experiment": null,
-    "model_version": "v1"
-  }
-]
-```
-
-## `DELETE /evaluations`
-
-Remove todo o histórico salvo de avaliações.
-
-Resposta:
-
-```json
-{ "deleted": 12 }
-```
+Histórico de decisões e operações de limpeza estão documentados em [`evaluations.md`](evaluations.md).

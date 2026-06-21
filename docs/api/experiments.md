@@ -18,6 +18,7 @@ Importante:
 - o experimento não altera a regra por conta própria;
 - a tela mostra o resumo, mas a coleta acontece na ingestão de eventos;
 - o mesmo experimento continua valendo enquanto estiver `enabled=true`.
+- o campo `primary_metric_event` é o identificador técnico da atividade usada como sucesso no teste.
 
 ## `POST /experiments`
 
@@ -27,9 +28,9 @@ Request:
 
 ```json
 {
-  "name": "Checkout CTA A/B",
-  "feature_key": "new_checkout",
-  "primary_metric_event": "viewed_feature",
+  "name": "Checkout Upsell A/B",
+  "feature_key": "checkout_upsell",
+  "primary_metric_event": "checkout_upsell_shown",
   "min_samples_per_variant": 100,
   "min_lift": 0.02,
   "enabled": true
@@ -40,7 +41,7 @@ Campos principais:
 
 - `min_samples_per_variant`: amostras mínimas por variante antes de encerrar o teste.
 - `min_lift`: diferença mínima entre as variantes para permitir decisão final.
-- `primary_metric_event`: atividade usada como sucesso do teste, por exemplo `viewed_feature`.
+- `primary_metric_event`: atividade usada como sucesso do teste, por exemplo `checkout_upsell_shown`.
 
 ## O que a variante significa
 

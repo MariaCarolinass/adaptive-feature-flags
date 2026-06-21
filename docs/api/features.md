@@ -8,11 +8,11 @@ Request:
 
 ```json
 {
-  "name": "New Checkout",
-  "key": "new_checkout",
-  "description": "Checkout variant",
+  "name": "Checkout Upsell",
+  "key": "checkout_upsell",
+  "description": "Oferta incremental no checkout",
   "enabled": true,
-  "rollout_percentage": 10,
+  "rollout_percentage": 45,
   "ml_enabled": true,
   "ml_threshold_mode": "maximize_f1",
   "ml_threshold_value": 0.1
@@ -24,11 +24,11 @@ Response `201`:
 ```json
 {
   "id": 1,
-  "name": "New Checkout",
-  "key": "new_checkout",
-  "description": "Checkout variant",
+  "name": "Checkout Upsell",
+  "key": "checkout_upsell",
+  "description": "Oferta incremental no checkout",
   "enabled": true,
-  "rollout_percentage": 10,
+  "rollout_percentage": 45,
   "ml_enabled": true,
   "ml_threshold_mode": "maximize_f1",
   "ml_threshold_value": 0.1,
@@ -40,6 +40,15 @@ Response `201`:
 ## `GET /features`
 
 Lista features ordenadas por criação.
+
+Cada item expõe:
+
+- `name`: nome legível da regra;
+- `key`: identificador técnico usado em eventos e avaliação;
+- `description`: descrição curta opcional;
+- `rollout_percentage`: percentual de liberação gradual;
+- `ml_enabled`: se a avaliação pode usar ML;
+- `ml_threshold_mode`: política do corte de liberação.
 
 ## `GET /features/{feature_id}`
 

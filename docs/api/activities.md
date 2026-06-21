@@ -20,9 +20,9 @@ Request:
 
 ```json
 {
-  "key": "viewed_feature",
-  "name": "Visualizou a funcionalidade",
-  "description": "Usuário abriu ou viu a funcionalidade",
+  "key": "checkout_upsell_shown",
+  "name": "Viu oferta no checkout",
+  "description": "Oferta incremental exibida no checkout",
   "enabled": true
 }
 ```
@@ -32,9 +32,9 @@ Response `201`:
 ```json
 {
   "id": 1,
-  "key": "viewed_feature",
-  "name": "Visualizou a funcionalidade",
-  "description": "Usuário abriu ou viu a funcionalidade",
+  "key": "checkout_upsell_shown",
+  "name": "Viu oferta no checkout",
+  "description": "Oferta incremental exibida no checkout",
   "enabled": true,
   "created_at": "2026-06-18T12:00:00Z",
   "updated_at": "2026-06-18T12:00:00Z"
@@ -44,6 +44,8 @@ Response `201`:
 ## `GET /activities`
 
 Lista as atividades cadastradas, em ordem de criação.
+
+Essa lista alimenta a UI e ajuda a manter o campo `event_type` legível nos fluxos de registro e ingestão.
 
 ## `GET /activities/{activity_id}`
 
