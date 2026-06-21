@@ -1,416 +1,570 @@
 # Adaptive Feature Flags: Relatório Técnico de Machine Learning
 
-## Introdução
+# Introdução
 
-### Identificação
+Este trabalho apresenta o projeto Adaptive Feature Flags, uma API experimental que combina liberação gradual de funcionalidades, ingestão de eventos e machine learning para tomar decisões por usuário. A proposta é transformar sinais de uso em uma decisão operacional: habilitar ou não uma feature, mantendo fallback determinístico por rollout quando o modelo não está pronto ou não consegue inferir com confiança.
+
+A solução também cobre os fluxos de produto que sustentam essa decisão: seed de dados sintéticos, registro de eventos, treino batch, avaliação online em tempo de requisição e experimentação A/B. A ideia é mostrar o ciclo completo, do dado bruto até a liberação da feature.
+
+# Identificação
 
 - Maria Carolina de Sousa Soares
 
-### Informações Gerais
+# Informações Gerais
 
-**Contextualização e justificativa.**  
-O projeto Adaptive Feature Flags foi desenvolvido para apoiar a decisão de ativação de features com base no comportamento real de usuários. A proposta articula engenharia de software, telemetria e Machine Learning para tornar a liberação de funcionalidades mais adaptativa, sem abrir mão de um comportamento determinístico quando o modelo não consegue produzir uma decisão confiável.
+## Contextualização e justificativa
 
-**Descrição do problema.**  
-Em produtos digitais, decidir manualmente quando uma feature deve ser habilitada gera custo operacional, inconsistências e risco de liberar algo para um público inadequado. O problema investigado neste trabalho consiste em transformar eventos de uso em sinais de aprendizado, de modo a prever a propensão do usuário a executar ações relevantes para o produto e, assim, apoiar a decisão de feature flags.
+Em produtos digitais, liberar funcionalidades manualmente aumenta custo operacional, cria inconsistências e expõe usuários a riscos desnecessários. O Adaptive Feature Flags foi pensado para estudar uma alternativa orientada a eventos, em que o comportamento do usuário alimenta tanto o processo de decisão quanto o aprendizado do modelo.
 
-**Descrição da base de dados.**  
-A base do projeto é formada por eventos canonicamente estruturados com os campos abaixo, cada um com uma função específica no fluxo do projeto:
+A proposta aproxima duas necessidades reais de engenharia de software:
 
-| Campo | Função |
+- controle de rollout com segurança;
+- uso de machine learning para apoiar decisões de produto.
+
+## Problema
+
+O problema pode ser resumido assim: a partir do histórico de eventos de um usuário, estimar sua propensão a produzir sinais positivos relevantes para uma feature e usar esse score para decidir a ativação da funcionalidade.
+
+Na prática, a avaliação responde a esta pergunta:
+
+> este usuário tem comportamento compatível com habilitar a feature agora?
+
+Por isso, o problema foi tratado como classificação binária por usuário, e não como previsão contínua de volume ou tempo.
+
+## Base de dados
+
+A base do projeto nasce em catálogos JSON localizados em `dataset/`. Esses arquivos não são apenas configuração: eles descrevem o contexto do produto, orientam o seed e garantem que os eventos gerados façam sentido para o treinamento supervisionado.
+
+Os catálogos atuais cobrem cinco contextos principais:
+
+- `checkout`: jornada de compra, checkout e decisão de conversão;
+- `growth`: descoberta, aquisição e ativação de interesse;
+- `retention`: retorno recorrente, hábito e continuidade de uso;
+- `activation`: onboarding, primeiros passos e primeiro valor;
+- `auth`: login, cadastro e recuperação de acesso.
+
+Cada catálogo é definido por uma estrutura única de campos, detalhada na tabela abaixo:
+
+| Campo | Significado técnico |
 | --- | --- |
-| `user_id` | identifica o usuário de forma estável e permite agregar comportamento ao nível individual |
-| `feature_key` | indica qual feature flag, experimento ou contexto de produto está associado ao evento |
-| `event_type` | descreve a ação observada, como exposição, interesse, conversão ou outro sinal de produto |
-| `timestamp` | permite ordenar os eventos no tempo e medir recência, frequência e janelas de atividade |
-| `properties` | armazena metadados contextuais, como segmento, dispositivo, jornada, variante ou métricas operacionais |
+| `seed_source` | origem lógica do catálogo, útil para rastreabilidade e auditoria |
+| `seed_version` | versão do catálogo, útil para evolução controlada do dataset |
+| `user_prefix` | prefixo dos usuários sintéticos, usado para evitar colisões entre catálogos |
+| `seed_anchor` | data inicial de referência dos eventos |
+| `seed_window_days` | janela temporal em que os eventos serão distribuídos |
+| `random_seed` | semente determinística do gerador pseudoaleatório |
+| `features` | regras e features que precisam existir no sistema |
+| `activities` | atividades canônicas usadas na UI, no seed e na avaliação |
+| `profiles` | perfis de usuários, com probabilidades e padrões de comportamento |
+| `journeys` | mapeamento de jornada por feature, definindo exposição, intenção e conversão |
 
-Além do fluxo de eventos, o sistema mantém um catálogo de atividades para separar identificadores técnicos (`key`) de rótulos de apresentação (`name`) e descrições curtas (`description`). Esse catálogo é usado na interface, na ingestão e na leitura das avaliações recentes.
+Essa estrutura faz a ponte entre produto e machine learning:
 
-O projeto também utiliza catálogos JSON para gerar dados sintéticos mais realistas por contexto, como checkout e conversão, growth e descoberta, ativação e onboarding, retenção e hábito, e autenticação e cadastro.
+- `features` define quais funcionalidades podem ser avaliadas;
+- `journeys` define quais eventos representam a jornada do usuário;
+- `profiles` define como o comportamento varia entre usuários;
+- `seed_anchor`, `seed_window_days` e `random_seed` determinam a parte temporal e a repetibilidade da base.
 
-Exemplo simplificado de catálogo JSON:
+O seed transforma esse catálogo em dados sintéticos reais para o projeto. Ele lê o JSON, cria usuários, distribui sessões no tempo e grava eventos coerentes com a jornada descrita.
 
-```json
-{
-  "seed_source": "seed_demo",
-  "seed_version": "auth_focus_v1",
-  "user_prefix": "auth_user",
-  "features": [
-    {
-      "name": "Magic Link Login",
-      "key": "magic_link_login",
-      "enabled": true,
-      "rollout_percentage": 60,
-      "ml_enabled": true,
-      "ml_threshold_mode": "match_rollout",
-      "ml_threshold_value": 0.22
-    }
-  ],
-  "journeys": {
-    "magic_link_login": {
-      "page": "login",
-      "surface": "passwordless login",
-      "exposure_event": "magic_link_prompt_shown",
-      "positive_event": "magic_link_requested",
-      "conversion_event": "login_success"
-    }
-  }
-}
+Depois do seed, os eventos já aparecem com os campos centrais abaixo:
+
+| Campo | Papel no dataset |
+| --- | --- |
+| `user_id` | identifica o usuário e permite agregação individual |
+| `feature_key` | relaciona o evento a uma feature ou jornada do produto |
+| `event_type` | descreve a ação observada, como visualização, interesse ou conversão |
+| `timestamp` | permite medir recência, frequência e ordem temporal |
+| `source` | indica a origem do evento |
+| `properties` | concentra metadados de contexto como segmento, dispositivo, jornada e variante |
+
+O seed é determinístico por `random_seed` e idempotente por identidade lógica do evento. Na prática, isso significa que o mesmo catálogo produz sempre o mesmo conjunto de eventos, desde que a entrada não mude.
+
+O banco local, na execução atual, registra também:
+
+- `activities`
+- `features`
+- `events`
+- `experiments`
+- `model_metadata`
+- `model_training_runs`
+- `evaluations`
+
+### Como o evento é representado
+
+Depois que o catálogo é carregado, o seed grava eventos individuais. Cada evento é a unidade bruta observada pelo sistema; ele ainda não é dado de ML, mas será agregado depois.
+
+| Campo | O que representa |
+| --- | --- |
+| `user_id` | usuário que executou a ação |
+| `feature_key` | feature ou jornada relacionada à ação |
+| `event_type` | ação em si, como `view`, `clicked`, `requested` ou `completed` |
+| `timestamp` | instante exato em que o evento ocorreu |
+| `source` | canal ou origem técnica do evento |
+| `properties` | contexto adicional do evento em formato estruturado |
+
+### Como o `timestamp` é utilizado
+
+O `timestamp` é um dos campos mais importantes do projeto porque permite transformar uma sequência de eventos em comportamento ao longo do tempo. Ele é usado para:
+
+- ordenar os eventos do usuário;
+- identificar o evento mais recente;
+- calcular `active_days`;
+- calcular `hours_since_last_event`;
+- calcular `avg_hour`;
+- calcular `avg_day_of_week`;
+- simular recorrência e recência de uso;
+- manter consistência temporal entre seed, treino e avaliação.
+
+Esse campo tira o sistema de uma visão estática e o coloca em uma visão temporal do comportamento. Na avaliação, ele ajuda a encontrar a atividade mais recente; no treino, permite criar agregações temporais por usuário.
+
+### Como o `latency_ms` é utilizado
+
+O campo `latency_ms` aparece dentro de `properties` e representa uma latência sintética associada ao evento. Ele não entra como feature principal no modelo atual, mas cumpre funções importantes:
+
+- deixa os eventos mais realistas;
+- ajuda a validar ingestão e serialização de metadados;
+- simula diferenças entre leitura, clique e conversão;
+- permite observar se o pipeline preserva informações auxiliares;
+- apoia futuras extensões para análise de performance e UX.
+
+Em termos simples: `timestamp` mostra quando algo aconteceu; `latency_ms` mostra a característica temporal da interação. São campos diferentes e complementares.
+
+### Como o `properties` é usado
+
+O campo `properties` concentra o contexto do evento. Sem ele, cada linha seria apenas um registro solto; com ele, o evento ganha narrativa de produto. Os campos mais relevantes são:
+
+- `catalog_name`: identifica o catálogo que gerou o evento;
+- `seed_source`: mantém rastreabilidade da origem do dado;
+- `seed_version`: indica qual versão do catálogo gerou o evento;
+- `journey`: nome lógico da jornada do produto;
+- `stage`: etapa da jornada, como awareness, exposure ou conversion;
+- `segment`: segmento do usuário;
+- `device`: dispositivo usado;
+- `country`: país do usuário;
+- `channel`: canal de aquisição ou acesso;
+- `session_id`: identificador da sessão;
+- `user_alias`: alias legível do usuário;
+- `page`: página do produto associada ao evento;
+- `surface`: superfície de interface relacionada ao evento;
+- `funnel_stage`: estágio do funil;
+- `flag_variant`: variante sintética controlada pelo seed;
+- `latency_ms`: latência sintética;
+- `step_index`: índice da sessão no fluxo;
+- `day_offset`: deslocamento temporal relativo ao `seed_anchor`;
+- `order_value`: valor da compra quando existe conversão;
+- `currency`: moeda do valor financeiro.
+
+Com isso, a base deixa de ser apenas uma coleção de eventos e passa a representar jornadas de produto contextualizadas.
+
+Com a base descrita, a próxima etapa é explicá-la como entrada de machine learning: os eventos brutos viram features, o target é construído e os modelos passam a ser treinados sobre uma visão agregada por usuário.
+
+## Objetivos
+
+Os objetivos principais do trabalho são:
+
+- estruturar uma base de eventos útil para aprendizado de máquina;
+- transformar eventos brutos em features agregadas por usuário;
+- treinar modelos supervisionados para prever comportamento positivo;
+- usar o score do modelo para apoiar a decisão de feature flags;
+- manter um fallback seguro por rollout determinístico;
+- registrar os resultados para leitura, auditoria e comparação.
+
+Em termos de produto, o projeto também busca:
+
+- demonstrar um fluxo event-driven completo;
+- separar claramente seed, ingestão, treino e avaliação;
+- apoiar experimentação e análise de variantes;
+- manter o sistema simples o suficiente para evoluir depois.
+
+# Metodologia
+
+## Conceitos de machine learning aplicados
+
+O problema foi modelado como **classificação supervisionada binária**. Cada usuário recebe uma classe final com base no comportamento observado no histórico de eventos.
+
+Essa decisão cria a ponte entre produto e ML: os eventos deixam de ser apenas registros operacionais e passam a ser sinais explicativos de comportamento, que podem ser agregados, rotulados e usados para inferência supervisionada.
+
+Conceitos usados no projeto:
+
+- **feature engineering**: os eventos são agregados por usuário para formar atributos numéricos;
+- **target supervisionado**: a classe do usuário é derivada de eventos positivos por uma **regra de rotulagem heurística**; em termos mais acadêmicos, isso pode ser descrito como **proxy label** ou **weak supervision**;
+- **desbalanceamento leve de classes**: o treino usa `class_weight="balanced"` em alguns modelos;
+- **split estratificado**: a divisão treino/teste preserva a proporção das classes;
+- **métricas de classificação**: `accuracy`, `precision`, `recall`, `f1_score` e `roc_auc`;
+- **otimização de threshold**: a decisão online pode usar corte fixo, corte alinhado ao rollout ou o melhor corte por F1; isso corresponde a **threshold tuning**;
+- **fallback determinístico**: se o modelo falhar, a decisão volta para o rollout percentual por **hash-based bucketing** com atribuição estável.
+
+Como a base é tabular e agregada por usuário, modelos clássicos de classificação foram uma escolha mais apropriada do que redes neurais mais complexas. O foco aqui é previsibilidade, interpretação e integração com o produto.
+
+## Fluxo completo do produto
+
+O fluxo principal é:
+
+1. os catálogos JSON em `dataset/` são carregados pelo seed;
+2. o seed cria `activities`, `features` e eventos sintéticos;
+3. os eventos são persistidos na tabela `events`;
+4. o treino batch lê esses eventos e monta o dataset supervisionado;
+5. o `FeatureBuilder` agrega sinais por usuário;
+6. o treino compara modelos candidatos e escolhe o melhor por `f1_score`;
+7. o artefato do modelo é salvo em disco;
+8. a avaliação online em `/evaluate` consulta o modelo pronto;
+9. se o score existir, a decisão usa ML;
+10. se não existir, o sistema cai para rollout determinístico;
+11. a decisão final é registrada em `evaluations`.
+
+O diagrama abaixo resume a decisão online completa, que é a parte mais importante do sistema na perspectiva de machine learning:
+
+```mermaid
+flowchart TD
+    A["Eventos / dataset JSON"] --> B["Seed e ingestão"]
+    B --> C[(events)]
+    C --> D["FeatureBuilder"]
+    D --> E["Dataset supervisionado"]
+    E --> F["Treino batch"]
+    F --> G["Comparar modelos"]
+    G --> H["Salvar artefato .joblib"]
+    H --> I["POST /evaluate"]
+    I --> J{Feature existe?}
+    J -- nao --> K["enabled=false\nfeature_not_found"]
+    J -- sim --> L{Feature habilitada?}
+    L -- nao --> M["enabled=false\nfeature_disabled"]
+    L -- sim --> N{ML disponível?}
+    N -- nao --> O["Fallback rollout"]
+    N -- sim --> P["Carregar eventos do usuario"]
+    P --> Q["FeatureBuilder por usuario"]
+    Q --> R["ModelPredictor.predict_score"]
+    R --> S{Score válido?}
+    S -- nao --> O
+    S -- sim --> T{threshold_mode}
+    T -- fixed --> U["ml_threshold_value"]
+    T -- match_rollout --> V["1 - rollout/100"]
+    T -- maximize_f1 --> W["best_threshold_by_f1"]
+    U --> X{score >= threshold?}
+    V --> X
+    W --> X
+    X -- sim --> Y["enabled=true\nsource=ml"]
+    X -- nao --> Z["enabled=false\nsource=ml"]
+    O --> AA["hash-based bucketing\nuser_id + feature_key"]
+    AA --> AB{bucket < rollout?}
+    AB -- sim --> AC["enabled=true\nsource=rollout"]
+    AB -- nao --> AD["enabled=false\nsource=rollout"]
+    Y --> AE[(evaluations)]
+    Z --> AE
+    K --> AE
+    M --> AE
+    AC --> AE
+    AD --> AE
 ```
 
-Exemplo de evento canônico persistido:
+## Variável alvo utilizada
 
-```json
-{
-  "user_id": "auth_user_01",
-  "feature_key": "magic_link_login",
-  "event_type": "magic_link_requested",
-  "timestamp": "2026-06-08T09:14:00Z",
-  "source": "web_app",
-  "properties": {
-    "segment": "new_visitor",
-    "device": "desktop",
-    "journey": "authentication",
-    "stage": "intent",
-    "seed_source": "seed_demo",
-    "seed_version": "auth_focus_v1"
-  }
-}
-```
+A variável alvo usada no treinamento é `target`.
 
-Esse tipo de registro alimenta o `FeatureBuilder`, que agrega os sinais por usuário para compor o dataset supervisionado do treino. Os catálogos permitem carregar usuários e eventos coerentes para a interface, para o treino e para a avaliação do modelo, preservando consistência entre a narrativa de produto e o comportamento observado.
+Definição:
 
-O histórico de avaliações também registra a atividade mais recente associada à decisão, o que facilita leitura e auditoria do resultado produzido pelo sistema.
+- `target = 1` se o usuário teve pelo menos um evento positivo;
+- `target = 0` caso contrário.
 
-**Descrição dos objetivos.**  
-Os objetivos principais são:
+Em termos de implementação, o alvo é derivado de `POSITIVE_EVENT_TYPES`, que reúne sinais de valor do produto, como exposição útil, interesse e conversão. Isso faz o problema ficar mais alinhado ao uso real da feature flag: o sistema tenta prever se o usuário apresenta comportamento positivo suficiente para receber a funcionalidade.
 
-- construir uma base de eventos coerente e útil para demo e treino;
-- extrair features agregadas por usuário;
-- treinar modelos supervisionados para estimar a propensão a eventos positivos;
-- usar o score do modelo para decidir a ativação de features;
-- manter um fallback seguro por rollout determinístico quando o ML não estiver pronto.
+Do ponto de vista técnico, essa definição é uma **regra de rotulagem heurística**. Ela funciona como um **proxy label** porque usa um critério operacional observável para aproximar o conceito de “usuário com comportamento positivo”.
 
-Do ponto de vista de engenharia, o projeto também busca demonstrar:
+## Como as variáveis são calculadas
 
-- separação entre seed, ingestão, treino e avaliação;
-- documentação de taxonomia de eventos;
-- reuso de catálogos externos em JSON;
-- idempotência do seed;
-- observabilidade básica do fluxo de ML.
+O `FeatureBuilder` transforma o histórico de eventos em uma linha por usuário. As features geradas pelo builder incluem:
 
-**Resumo executivo do trabalho.**
+- `total_events`
+- `positive_events`
+- `view_events`
+- `cart_events`
+- `purchase_events`
+- `unique_features`
+- `active_days`
+- `avg_hour`
+- `avg_day_of_week`
+- `hours_since_last_event`
+- `events_per_day`
+- `positive_rate`
+- `target`
 
-Em síntese, o trabalho aborda um problema de decisão manual de ativação de features, estrutura eventos canônicos por usuário e por contexto de produto, aplica classificação supervisionada binária com agregação por usuário e produz como saída o score do modelo, o threshold de decisão e o fallback de rollout. Do ponto de vista aplicado, o resultado é uma simulação realista com treino reproduzível e decisão explicável.
-
-### Resumo do sistema
-
-O sistema organiza-se em camadas: a API trata contratos, o domínio concentra regras de negócio, a infraestrutura cuida de persistência e ML, os catálogos JSON alimentam os cenários sintéticos e a interface permite a verificação visual do comportamento da plataforma.
-
-## Metodologia
-
-### Conceitos de Machine Learning e ciência de dados aplicados
-
-O problema foi modelado como **classificação supervisionada binária**. O objetivo não é prever um valor contínuo, mas estimar a probabilidade de um usuário produzir sinais positivos relevantes para o produto.
-
-Conceitos usados no trabalho:
-
-- **feature engineering**: eventos brutos são agregados por usuário para formar atributos de comportamento;
-- **target supervisionado**: o usuário recebe classe `1` se teve ao menos um evento positivo;
-- **class imbalance**: os modelos usam `class_weight="balanced"` quando aplicável;
-- **train/test split estratificado**: preserva proporção das classes;
-- **métricas de classificação**: `accuracy`, `precision`, `recall`, `f1_score`, `roc_auc`;
-- **threshold de decisão**: a feature pode usar threshold fixo, alinhado ao rollout, ou otimizado por F1;
-- **fallback determinístico**: quando o modelo falha, a decisão retorna ao rollout por usuário e feature.
-
-### Heurísticas de geração da base
-
-Os dados sintéticos não são aleatórios puros. O seed utiliza heurísticas para produzir uma base com características semelhantes às de um produto real:
-
-- cada catálogo gera 50 usuários;
-- cada usuário recebe um perfil com probabilidade de sinal positivo;
-- cada usuário tem de 1 a 4 dias ativos, dependendo do catálogo;
-- cada dia pode ter 1 ou 2 sessões;
-- os eventos são espalhados em janelas de dias diferentes para simular histórico;
-- a jornada inclui exposição, interesse e conversão, quando faz sentido.
-
-Na prática, o seed busca equilibrar dois objetivos:
-
-- ser previsível e reprodutível, porque usa `random_seed`;
-- ser crível, porque distribui eventos por contexto de produto e não apenas por volume bruto.
-
-### Componentes de ML
-
-O `FeatureBuilder` agrega eventos por usuário e gera variáveis numéricas. O `train_from_events` executa o treino supervisionado e o benchmark dos modelos candidatos. O `ModelSerializer` salva e carrega artefatos `.joblib`, o `ModelPredictor` gera o score de probabilidade na avaliação online e o `EvaluationService` decide `enabled` usando ML ou rollout determinístico.
-
-### Taxonomia de eventos
-
-A qualidade do aprendizado depende da interpretação dos eventos. O projeto separa os sinais em grupos:
-
-- `VIEW_EVENT_TYPES`: exposição inicial;
-- `INTERMEDIATE_POSITIVE_EVENT_TYPES`: interesse ou progresso intermediário;
-- `TERMINAL_POSITIVE_EVENT_TYPES`: conversão final;
-- `POSITIVE_EVENT_TYPES`: conjunto de sinais positivos usados no target e na avaliação.
-
-Essa separação contribui para transformar telemetria bruta em sinais mais legíveis para o modelo e para a interpretação do comportamento do usuário.
-
-### Como as features são calculadas
-
-O `FeatureBuilder` transforma eventos em variáveis numéricas por usuário. Algumas fórmulas usadas no pipeline são:
+As fórmulas principais são:
 
 - `positive_rate = positive_events / total_events`
 - `events_per_day = total_events / active_days`
-- `hours_since_last_event = diferença entre o timestamp de referência e o último evento`
+- `hours_since_last_event = (reference_timestamp - last_seen) em horas`
+- `target = 1` quando `positive_events > 0`
 
-Esses cálculos são importantes porque resumem comportamento em dimensões úteis para classificação:
+### Taxonomia de eventos
 
-- volume de uso;
-- recência;
-- diversidade de features;
-- distribuição temporal;
-- intensidade de ação positiva.
+A qualidade do aprendizado depende de classificar corretamente os eventos. O projeto organiza os sinais em grupos que representam estágios diferentes da jornada do usuário:
 
-### Passos para resolver o problema
+| Grupo | Significado | Exemplos | Uso em ML |
+| --- | --- | --- | --- |
+| `VIEW_EVENT_TYPES` | exposição inicial ou awareness | `view`, `checkout_upsell_shown`, `onboarding_step_shown` | alimenta `view_events` e ajuda a medir abertura ao fluxo |
+| `INTERMEDIATE_POSITIVE_EVENT_TYPES` | interesse intermediário ou intenção | `checkout_upsell_clicked`, `pricing_details_opened`, `hero_cta_clicked` | alimenta `cart_events` e mostra avanço no funil |
+| `TERMINAL_POSITIVE_EVENT_TYPES` | conversão final ou ação concluída | `transaction`, `purchase_completed`, `subscription_upgraded` | alimenta `purchase_events` e captura o objetivo final |
+| `POSITIVE_EVENT_TYPES` | conjunto completo de sinais positivos relevantes | união dos grupos acima + eventos como `addtocart` | define o `target` e agrega os sinais que o modelo considera positivos |
 
-1. Gerar ou importar eventos no schema canônico.
-2. Sincronizar features demo com os catálogos JSON.
-3. Agregar eventos por usuário com o `FeatureBuilder`.
-4. Construir o dataset supervisionado.
-5. Dividir em treino e teste com estratificação.
-6. Treinar modelos candidatos.
-7. Selecionar o melhor modelo pelo maior `f1_score`.
-8. Salvar artefato e metadados do treino.
-9. Na avaliação online, usar o score do modelo ou cair para rollout determinístico.
+Essa taxonomia separa o comportamento do usuário em níveis de intenção. Primeiro o evento mostra exposição, depois interesse, e por fim conversão. Essa separação melhora a leitura do dataset e ajuda o modelo a não depender de um único tipo de ação.
 
-### Heurísticas de decisão e calibração
+Na fase de treino atual, o modelo usa este subconjunto de variáveis:
 
-O fluxo utiliza heurísticas simples, mas relevantes:
+- `unique_features`
+- `active_days`
+- `avg_hour`
+- `avg_day_of_week`
+- `hours_since_last_event`
+- `events_per_day`
 
-- o target é definido por presença de pelo menos um evento positivo;
-- a escolha do modelo privilegia `f1_score`, e não apenas acurácia;
-- o threshold de decisão pode ser fixo, alinhado ao rollout ou otimizado por F1;
-- o fallback determinístico garante que o mesmo `user_id` e `feature_key` resultem sempre na mesma decisão enquanto o rollout não se alterar.
+Essas colunas foram escolhidas porque resumem comportamento de forma compacta, sem depender de alta dimensionalidade.
 
-### Modelo e engenharia de software que sustentam o ML
+## Relação entre as variáveis
 
-O trabalho não se limita a um experimento de ML isolado. O fluxo depende de componentes de engenharia que viabilizam a reprodução do processo:
+As variáveis têm interpretações complementares:
 
-- API para persistir eventos, features e decisões;
-- scripts de seed para criar cenários realistas e idempotentes;
-- catálogos externos em JSON para separar dados de lógica;
-- armazenamento do modelo em artefato `.joblib`;
-- histórico de treinos e status do modelo;
-- dashboard para visualização do efeito das decisões.
+- `positive_events` está diretamente ligado ao `target`;
+- `positive_rate` mostra a proporção de comportamento positivo;
+- `unique_features` mede diversidade de uso;
+- `active_days` mede recorrência;
+- `hours_since_last_event` mede recência;
+- `events_per_day` mede intensidade;
+- `avg_hour` e `avg_day_of_week` capturam padrão temporal de uso.
 
-Essa separação ajuda a manter o pipeline compreensível e relativamente fácil de evoluir.
+No conjunto sintético do projeto, usuários mais engajados tendem a apresentar:
 
-### Teste A/B
+- mais eventos positivos;
+- maior número de dias ativos;
+- mais diversidade de features;
+- menor recência do último evento;
+- maior intensidade de uso.
 
-O projeto também implementa uma camada de experimento A/B-lite para comparar variantes de uma mesma feature com base em uma métrica principal, permitindo observar o impacto de mudanças em um contexto controlado.
+Isso cria uma relação plausível entre comportamento e probabilidade de ativação da feature.
 
-Os principais elementos são `feature_key` para identificar a regra testada, `primary_metric_event` como evento de sucesso, `min_samples_per_variant` para garantir volume mínimo, `min_lift` para definir o ganho mínimo e `ab_variant` para marcar se o evento pertence a A ou B.
+## Modelos escolhidos e por que
 
-#### Como o experimento funciona
+O benchmark do treino compara três modelos:
 
-1. O experimento é criado para uma `feature_key`.
-2. Novos eventos dessa feature passam a receber `ab_variant`.
-3. A atribuição de variante é determinística por `user_id` e `experiment_id`.
-4. O resultado conta apenas eventos novos com `ab_variant`.
-5. A decisão final compara a taxa de sucesso entre A e B.
+- `RandomForestClassifier`
+- `LogisticRegression`
+- `GradientBoostingClassifier`
 
-#### Regras de decisão do experimento
+Motivos da escolha:
 
-O experimento permanece em execução enquanto não atinge `min_samples_per_variant` em ambas as variantes. Quando a amostra mínima é alcançada, o sistema encerra o teste se `abs(lift)` for maior ou igual a `min_lift`, retornando `stop_promote_b` quando B supera A ou `stop_keep_a` quando A supera B. Caso contrário, a decisão permanece `continue`.
+- **Random Forest**: lida bem com relações não lineares e é robusto a ruído;
+- **Logistic Regression**: serve como baseline interpretável e rápido;
+- **Gradient Boosting**: testa uma capacidade maior de ajuste em interações entre variáveis.
 
-#### Diagrama do fluxo A/B
+O vencedor é definido pelo maior `f1_score` no conjunto de teste. Essa métrica foi escolhida porque o problema exige equilíbrio entre precisão e recall. Em feature flags, tanto falso positivo quanto falso negativo importam:
+
+- falso positivo pode liberar a feature para quem não deveria;
+- falso negativo pode impedir uma liberação útil.
+
+O `f1_score` ajuda a equilibrar essas duas falhas.
+
+### Fluxo de escolha do modelo
+
+O modelo que vai liberar a feature não é escolhido manualmente; ele passa por um pipeline de treino, comparação e persistência:
 
 ```mermaid
 flowchart TD
-    A["POST /experiments"] --> B["Experimento ativo"]
-    B --> C["Eventos novos da feature_key"]
-    C --> D["Atribuição A/B por user_id e experiment_id"]
-    D --> E["Salvar ab_variant em properties"]
-    E --> F["Resultado do experimento"]
-    F --> G["Contar samples e positivos por variante"]
-    G --> H{"min_samples atingido?"}
-    H -- nao --> I["continue"]
-    H -- sim --> J{"abs(lift) >= min_lift?"}
-    J -- nao --> I
-    J -- sim --> K["stop_promote_b ou stop_keep_a"]
+    A["Eventos persistidos"] --> B["Construir dataset"]
+    B --> C["FeatureBuilder"]
+    C --> D["Split treino/teste estratificado"]
+    D --> E["RandomForestClassifier"]
+    D --> F["LogisticRegression"]
+    D --> G["GradientBoostingClassifier"]
+    E --> H["Calcular métricas"]
+    F --> H
+    G --> H
+    H --> I{"Maior F1?"}
+    I -- sim --> J["Selecionar modelo vencedor"]
+    J --> K["Salvar artefato .joblib"]
+    K --> L["Persistir model_metadata"]
+    L --> M["Persistir model_training_runs"]
+    M --> N["Status ready"]
 ```
 
-#### Relação com a avaliação de ML
+Nesse fluxo:
 
-O A/B-lite não substitui o ML. Ele complementa o sistema:
+- todos os candidatos usam o mesmo dataset supervisionado;
+- a divisão treino/teste é estratificada para manter a proporção das classes;
+- o melhor modelo é o que obtém maior `f1_score`;
+- o artefato só passa a ser usado em `/evaluate` quando o status fica `ready` e o `artifact_path` existe.
 
-- o ML decide se uma feature deve ficar habilitada para um usuário;
-- o experimento mede a performance de uma variante quando o teste está ativo;
-- os dois fluxos usam a mesma telemetria, mas respondem perguntas diferentes.
+## Decisão online e fallback
 
-### Como as decisões são calculadas
-
-A decisão final de uma feature para um usuário é calculada em camadas:
+Na avaliação em `/evaluate`, a regra é:
 
 1. verificar se a feature existe;
-2. verificar se a feature está habilitada;
-3. tentar score de ML, se `ml_enabled=true` e existir modelo pronto;
-4. se o score existir, comparar `score >= threshold`;
-5. se qualquer etapa falhar, usar rollout determinístico.
+2. verificar se está habilitada;
+3. tentar usar o modelo se `ml_enabled=true` e o artefato estiver pronto;
+4. calcular o score do usuário;
+5. comparar score com threshold;
+6. se algo falhar, usar rollout determinístico.
 
-#### Regra de decisão
+O rollout usa um **bucket estável** baseado em `sha256(user_id:feature_key) % 100`, garantindo que o mesmo usuário receba a mesma decisão enquanto o percentual não mudar. O nome técnico desse padrão é **hash-based bucketing** ou **deterministic assignment**.
 
-| Cenário | Cálculo principal | Saída |
-| --- | --- | --- |
-| Feature inexistente | n/a | `enabled = false`, `decision_source = feature_not_found` |
-| Feature desabilitada | n/a | `enabled = false`, `decision_source = feature_disabled` |
-| ML disponível | `enabled = score >= threshold` | `decision_source = ml` |
-| Fallback | `bucket = sha256(user_id + ":" + feature_key) % 100` e comparado com `rollout_percentage` | `enabled = bucket < rollout_percentage`, `decision_source = rollout` |
+O threshold da feature pode seguir três modos:
 
-O threshold depende de `ml_threshold_mode`: no modo `fixed`, usa `ml_threshold_value`; em `match_rollout`, aproxima a cobertura com `1 - rollout_percentage / 100`; em `maximize_f1`, usa `best_threshold_by_f1` salvo nas métricas do modelo.
+- `fixed`: usa `ml_threshold_value`;
+- `match_rollout`: aproxima o corte pela cobertura do rollout, uma forma de **threshold calibration**;
+- `maximize_f1`: usa o melhor threshold encontrado no treino, resultado do **threshold tuning**.
 
-#### Diagrama do fluxo de decisão
+Esse fluxo mostra o ciclo completo de decisão: o sistema treina, escolhe o melhor modelo, salva o artefato, aplica inferência em `/evaluate` e só então decide se libera a feature. O modelo não é uma peça isolada; ele é a etapa intermediária entre o histórico do usuário e a decisão operacional.
+
+## Explicação dos fluxos auxiliares do produto
+
+Além do ML principal, o projeto também possui experimentação A/B. Nesse fluxo, o sistema registra `ab_variant` em eventos quando há experimento ativo, mede a métrica principal e calcula lift entre variantes. Esse mecanismo não substitui o ML da feature flag, mas complementa a análise de produto.
+
+### Fluxo de experimentação A/B
 
 ```mermaid
 flowchart TD
-    A[POST /evaluate] --> B{feature existe?}
-    B -- nao --> C[enabled=false\nfeature_not_found]
-    B -- sim --> D{feature.enabled?}
-    D -- nao --> E[enabled=false\nfeature_disabled]
-    D -- sim --> F{ml_enabled e modelo ready?}
-    F -- nao --> G[Fallback rollout]
-    F -- sim --> H[Coleta eventos do usuario]
-    H --> I[FeatureBuilder agrega features]
-    I --> J[ModelPredictor gera score]
-    J --> K{threshold_mode}
-    K -->|fixed| L[ml_threshold_value]
-    K -->|match_rollout| M[1 - rollout/100]
-    K -->|maximize_f1| N[best_threshold_by_f1]
-    L --> O{score >= threshold?}
-    M --> O
-    N --> O
-    O -- sim --> P[enabled=true\nsource=ml]
-    O -- nao --> Q[enabled=false\nsource=ml]
-    G --> R["stable bucket from user and feature"]
-    R --> S{bucket < rollout?}
-    S -- sim --> T[enabled=true\nsource=rollout]
-    S -- nao --> U[enabled=false\nsource=rollout]
+    A["POST /experiments"] --> B["Salvar experimento"]
+    B --> C["Experimento ativo por feature_key"]
+    C --> D["Evento novo chega"]
+    D --> E{Experimento ativo?}
+    E -- nao --> F["Salvar evento normalmente"]
+    E -- sim --> G["Calcular variante por hash"]
+    G --> H["Adicionar ab_variant em properties"]
+    H --> I["Salvar evento"]
+    I --> J["Agrupar eventos da feature"]
+    J --> K["Separar A e B"]
+    K --> L["Contar amostras e sucessos"]
+    L --> M{min_samples_per_variant atingido?}
+    M -- nao --> N["continue"]
+    M -- sim --> O{"Lift atinge o limiar?"}
+    O -- nao --> N
+    O -- sim --> P{lift positivo?}
+    P -- sim --> Q["stop_promote_b"]
+    P -- nao --> R["stop_keep_a"]
 ```
 
-### Endpoints principais
+Leitura do fluxo:
 
-O projeto expõe os principais endpoints de saúde, CRUD de features, eventos, ingestão, treino, avaliação, histórico, observabilidade e experimentos. Em conjunto, eles cobrem o fluxo completo de dados, aprendizado e decisão.
+- `ab_variant` é salvo junto ao evento apenas quando existe experimento ativo para a `feature_key`;
+- a atribuição de variante é estável por `user_id` e por `experiment_id`; na implementação atual, isso é feito por **hash-based bucketing** com `sha256(f"{experiment_id}:{user_id}") % 100`;
+- a avaliação usa a métrica principal definida em `primary_metric_event`;
+- o experimento só decide quando cada variante atinge `min_samples_per_variant`;
+- a decisão final compara o `lift` entre B e A.
 
-#### Diagrama do pipeline do sistema
+As fórmulas centrais são:
 
-```mermaid
-flowchart LR
-    A[Eventos /ingest ou /events] --> B[(Banco events)]
-    B --> C[POST /train]
-    C --> D[FeatureBuilder]
-    D --> E[Benchmark de modelos]
-    E --> F[Artefato .joblib]
-    F --> G[POST /evaluate]
-    G --> H{ML ou rollout}
-    H --> I[Decisao final]
-    I --> J[(evaluation history)]
-```
+- `taxa_de_sucesso = eventos_de_sucesso / amostras`
+- `lift_B_vs_A = taxa_de_sucesso_B - taxa_de_sucesso_A`
 
-## Experimentos
+O A/B entra como uma camada complementar de leitura do produto. Enquanto o modelo supervisionado decide a liberação por usuário, o experimento compara variantes de uma mesma feature para responder se uma mudança específica performa melhor que a outra.
 
-### Tipos de testes executados
+# Experimentos (Opcional)
 
-Os experimentos do projeto foram conduzidos em duas frentes:
+## Tipos de testes executados
 
-- **seed demo**: gera dados sintéticos coerentes por catálogo e, sem argumentos, importa todos os JSON do diretório `dataset/`;
-- **treino supervisionado**: compara modelos candidatos no mesmo conjunto de dados.
+Os testes mais relevantes no projeto foram:
 
-### Parâmetros avaliados
+- benchmark dos modelos candidatos no mesmo dataset;
+- calibração de threshold entre `0.05` e `0.95` em passos de `0.05`;
+- divisão treino/teste estratificada;
+- avaliação do fallback determinístico;
+- persistência do histórico de treino e avaliação.
 
-Os parâmetros e escolhas mais relevantes foram:
+Cada um desses testes verifica uma parte do encadeamento do sistema: a geração da base sintética, a consistência das features, a qualidade do classificador, a estabilidade da decisão online e a leitura de variante no fluxo experimental.
 
-- número de usuários por catálogo;
-- número de eventos por catálogo;
-- distribuição das classes positiva e negativa;
-- taxonomia de eventos;
-- modelos candidatos;
-- threshold de decisão;
-- split treino/teste estratificado.
+## Parâmetros avaliados
 
-### Resultados observados
+Os parâmetros observados no treinamento foram:
 
-Com os 5 catálogos atuais importados pelo seed padrão (`python3 scripts/seed_demo.py`), a base demo gera:
+- `accuracy`
+- `precision`
+- `recall`
+- `f1_score`
+- `roc_auc`
+- matriz de confusão
+- `best_threshold_by_f1`
+- `model_version`
+- `artifact_path`
 
-| Indicador | Valor |
+Na última execução registrada, o treino usou:
+
+- `total_events = 1650`
+- `unique_users = 251`
+- `positive_events = 321`
+- `positive_rate = 60.16%`
+- `train_rows = 200`
+- `test_rows = 51`
+
+Esse volume é suficiente para um MVP acadêmico porque oferece diversidade sem perder rastreabilidade.
+
+## Resultados
+
+Na execução atual, o modelo selecionado foi `logistic_regression`, versão `v7`, salvo em `storage/models/v7.joblib`.
+
+### Benchmark dos modelos
+
+| Modelo | Accuracy | Precision | Recall | F1 | ROC AUC | Best threshold |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `random_forest` | 0.7255 | 0.7429 | 0.8387 | 0.7879 | 0.8065 | 0.40 |
+| `logistic_regression` | 0.7647 | 0.8519 | 0.7419 | 0.7931 | 0.8581 | 0.30 |
+| `gradient_boosting` | 0.7059 | 0.7222 | 0.8387 | 0.7761 | 0.8016 | 0.25 |
+
+### Métricas do modelo selecionado
+
+| Métrica | Valor |
 | --- | ---: |
-| Usuários sintéticos | 250 |
-| Eventos totais | 3457 |
-| Features únicas | 20 |
-| Usuários positivos | 151 |
-| Usuários negativos | 99 |
-| Taxa positiva por usuário | 60,4% |
-| Taxa positiva por evento | 10,9% |
-| Média de eventos por usuário | 13,83 |
+| Accuracy | 0.7647 |
+| Precision | 0.8519 |
+| Recall | 0.7419 |
+| F1 | 0.7931 |
+| ROC AUC | 0.8581 |
+| Best threshold by F1 | 0.30 |
 
-Esse volume foi considerado adequado para o objetivo do projeto:
+### Matriz de confusão
 
-- a simulação fica visualmente rica;
-- o treino ganha variabilidade suficiente para um MVP;
-- a base não fica artificialmente pequena;
-- os eventos permanecem coerentes com o contexto do produto.
+| TN | FP | FN | TP |
+| ---: | ---: | ---: | ---: |
+| 16 | 4 | 8 | 23 |
 
-Do ponto de vista metodológico, a principal descoberta foi que:
+## Interpretação dos resultados
 
-- aumentar o número de usuários melhora mais o treino do que inflar eventos repetidos;
-- nomes concretos de eventos deixam a base mais realista;
-- manter a taxonomia clara melhora interpretabilidade e depuração;
-- o modelo aprende melhor quando o target é derivado de sinais positivos bem definidos.
+A `LogisticRegression` foi escolhida porque apresentou o melhor `f1_score` e também o melhor `roc_auc` entre os três modelos. Isso indica que ela separou melhor as classes positivas e negativas na base atual.
 
-Também ficou claro que a qualidade da simulação melhora quando os catálogos cobrem contextos diferentes, porque isso aumenta a diversidade do dataset sem quebrar a coerência do produto.
+Leituras importantes desses números:
 
-### Benchmark de modelos
+- a precision alta indica que o modelo erra pouco quando prevê positivo;
+- o recall menor que a precision mostra que ainda existem positivos não detectados;
+- o threshold ótimo de `0.30` sugere que o corte padrão `0.50` seria conservador demais;
+- a classe positiva não é extrema, então o uso de pesos balanceados ajuda a estabilizar o treino;
+- o modelo linear foi suficiente para a estrutura do dataset, que já traz features agregadas e informativas.
 
-O treino compara três candidatos:
+Do ponto de vista do produto, o resultado é bom porque o sistema não depende apenas do modelo:
 
-| Modelo | Característica principal | Papel no benchmark |
-| --- | --- | --- |
-| `RandomForestClassifier` | lida bem com relações não lineares e ruído moderado | baseline forte e robusto |
-| `LogisticRegression` | interpretável e simples | referência linear e fácil de depurar |
-| `GradientBoostingClassifier` | captura interações mais complexas | teste de capacidade adicional de ajuste |
+- se a inferência funcionar, a feature é decidida por ML;
+- se não funcionar, o fallback por rollout mantém o sistema operacional;
+- o histórico de treino e avaliação torna o processo auditável.
 
-O melhor modelo é escolhido pelo maior `f1_score` no conjunto de teste. Essa decisão prioriza equilíbrio entre precisão e recall, o que faz sentido para um problema de ativação de features, em que tanto falso positivo quanto falso negativo são relevantes.
+## Observabilidade
 
-Na prática, o `f1_score` funciona como uma heurística de equilíbrio:
+O projeto mantém rastreio básico dos eventos de ML e produto. Na base local atual existem:
 
-- se o modelo erra pouco os positivos, mas perde muitos casos, o recall cai;
-- se o modelo marca demais como positivo, a precisão cai;
-- o F1 penaliza os dois extremos e ajuda a comparar candidatos com comportamento diferente.
+- `1` registro em `model_metadata`;
+- `7` execuções em `model_training_runs`;
+- `24` decisões em `evaluations`.
 
-### Parâmetros de treino relevantes
+Isso ajuda a demonstrar evolução do sistema durante a apresentação.
 
-| Parâmetro | Valor / heurística | Papel |
-| --- | --- | --- |
-| Split | `train_test_split(..., stratify=y)` | Mantém a proporção das classes no treino e no teste |
-| Semente | `random_state=42` | Reprodutibilidade do benchmark |
-| Balanceamento | `class_weight="balanced"` quando aplicável | Reduz efeito de desbalanceamento |
-| Threshold | `fixed`, `match_rollout` ou `maximize_f1` | Ajusta a sensibilidade da decisão online |
-| Fallback | hash estável de `user_id` + `feature_key` | Mantém decisão consistente quando ML falha |
-| Calibração | busca em threshold de `0.05` a `0.95` | Estima `best_threshold_by_f1` |
-
-No ajuste de threshold, o trainer também procura o melhor ponto entre `0.05` e `0.95`, em passos de `0.05`, para estimar `best_threshold_by_f1`. Isso permite uma calibração simples e explicável para a decisão online.
-
-## Conclusão
+# Conclusão
 
 Sim, o trabalho atendeu aos objetivos propostos.
 
+A narrativa técnica do projeto fica encadeada assim: primeiro o sistema define a base sintética e o significado dos eventos; depois converte os eventos em features agregadas e rotuladas; em seguida compara modelos supervisionados e escolhe o melhor; por fim, usa esse modelo para tomar decisões de produto com fallback seguro e com suporte a experimentação.
+
 O projeto conseguiu:
 
-- organizar uma base de eventos coerente;
-- estruturar uma taxonomia útil para ML;
+- estruturar uma base sintética coerente;
 - transformar eventos em features por usuário;
-- treinar modelos supervisionados;
-- registrar métricas e benchmark;
+- treinar e comparar modelos supervisionados;
+- selecionar o melhor modelo por métrica adequada ao problema;
 - aplicar decisão online com fallback seguro;
-- manter o sistema útil para avaliação visual e técnica.
+- integrar ML com o fluxo de produto e com experimentação.
 
-Como aprendizado principal, o trabalho mostrou que a qualidade do ML aqui depende mais da organização dos dados e da interpretabilidade dos sinais do que da complexidade do modelo em si. Em resumo, o projeto valida um fluxo completo de machine learning aplicado à decisão de produto, com boa engenharia de suporte e espaço claro para evolução futura.
+Como aprendizado principal, o trabalho mostra que, nesse tipo de aplicação, a qualidade da decisão depende mais da organização dos dados, da escolha do alvo e da interpretação das métricas do que da complexidade do modelo. O resultado final é um fluxo completo de machine learning aplicado a feature flags, com explicação clara, rastreabilidade e espaço para evolução futura.
