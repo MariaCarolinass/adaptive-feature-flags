@@ -8,6 +8,11 @@ O treino compara três candidatos (`random_forest`, `logistic_regression` e `gra
 
 O bloco `feature_columns` no retorno do treino lista as variáveis agregadas por usuário que foram usadas no modelo. Entre elas estão `unique_features`, `active_days`, `avg_hour`, `avg_day_of_week`, `hours_since_last_event` e `events_per_day`.
 
+Importante:
+
+- o treino lê eventos persistidos;
+- a tabela de atividades serve como catálogo legível para a UI, mas não substitui os eventos canônicos do treino.
+
 Exemplo de resposta:
 
 ```json
@@ -78,10 +83,36 @@ Exemplo:
 
 Retorna histórico recente de treinos com snapshot completo (métricas, benchmark, perfil do dataset e política de fallback/threshold).
 
-## Fluxo dos endpoints de treino
+Exemplo:
+
+```json
+{
+  "runs": [
+    {
+      "model_version": "v1",
+      "status": "ready",
+      "trained_at": "2026-05-23T12:10:00Z",
+      "duration_ms": 4280,
+      "metrics": {
+        "accuracy": 0.82,
+        "f1_score": 0.79
+      }
+    }
+  ]
+}
+```
+
+## Ciclo de vida do modelo
 
 ```mermaid
-flowchart LR
-    A[POST /train] --> B[treino síncrono]
-    B --> C[GET /model/status]
+flowchart TD
+    A[Eventos persistidos] --> B[POST /train]
+    B --> C[Seleção do melhor modelo]
+    C --> D[Artefato .joblib]
+    C --> E[model_metadata status=ready]
+    C --> F[model_training_runs]
+    D --> G[GET /model/status]
+    E --> G
+    F --> H[GET /model/runs]
+    G --> I[POST /evaluate]
 ```
