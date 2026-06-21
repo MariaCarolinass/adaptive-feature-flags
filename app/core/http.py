@@ -47,6 +47,9 @@ def register_http_stack(app: FastAPI, settings: Settings) -> None:
         if not settings.auth_enabled:
             return await call_next(request)
 
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return await call_next(request)
+
         if _is_exempt_path(request.url.path, settings.auth_exempt_paths):
             return await call_next(request)
 
@@ -118,7 +121,7 @@ def attach_openapi_auth(app: FastAPI) -> None:
             for method_name, operation in methods.items():
                 if method_name.lower() not in {"get", "post", "put", "patch", "delete", "options", "head"}:
                     continue
-                if path in public_paths:
+                if method_name.lower() in {"get", "head", "options"} or path in public_paths:
                     operation["security"] = []
                 else:
                     operation["security"] = [{"BearerAuth": []}]
