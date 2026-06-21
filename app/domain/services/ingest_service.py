@@ -1,11 +1,36 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections import defaultdict, deque
+from datetime import datetime, timedelta, timezone
+from threading import Lock
 
 from app.core.exceptions import ValidationError
 from app.domain.services.experiment_service import ExperimentService
 from app.domain.services.event_service import EventService
+from app.schemas.event_ingest import MAX_INGEST_BATCH_SIZE
 from app.infrastructure.observability.metrics import MetricsSink, NoopMetricsSink
+
+DEFAULT_INGEST_RATE_LIMIT_EVENTS = 5000
+DEFAULT_INGEST_RATE_LIMIT_WINDOW_SECONDS = 60
+
+
+class _SlidingWindowRateLimiter:
+    def __init__(self, max_events: int, window_seconds: int) -> None:
+        self._max_events = max_events
+        self._window = timedelta(seconds=window_seconds)
+        self._events: dict[str, deque[datetime]] = defaultdict(deque)
+        self._lock = Lock()
+
+    def allow(self, key: str, now: datetime) -> bool:
+        with self._lock:
+            queue = self._events[key]
+            cutoff = now - self._window
+            while queue and queue[0] <= cutoff:
+                queue.popleft()
+            if len(queue) >= self._max_events:
+                return False
+            queue.append(now)
+            return True
 
 
 class IngestService:
@@ -14,21 +39,31 @@ class IngestService:
         event_service: EventService,
         experiment_service: ExperimentService | None = None,
         metrics: MetricsSink | None = None,
+        rate_limit_max_events: int = DEFAULT_INGEST_RATE_LIMIT_EVENTS,
+        rate_limit_window_seconds: int = DEFAULT_INGEST_RATE_LIMIT_WINDOW_SECONDS,
     ) -> None:
         self._event_service = event_service
         self._experiment_service = experiment_service
         self.metrics = metrics or NoopMetricsSink()
+        self._rate_limiter = _SlidingWindowRateLimiter(rate_limit_max_events, rate_limit_window_seconds)
 
-    def ingest_events(self, *, source: str, events: list[dict]) -> dict[str, int]:
+    def ingest_events(self, *, source: str, events: list[dict], client_id: str = "unknown") -> dict[str, int]:
         if not source.strip():
             raise ValidationError("source must not be empty.")
         if not events:
             raise ValidationError("events must contain at least one item.")
+        if len(events) > MAX_INGEST_BATCH_SIZE:
+            raise ValidationError(f"events must not exceed {MAX_INGEST_BATCH_SIZE} items.")
 
         saved = 0
         rejected = 0
         now = datetime.now(timezone.utc)
+        rate_limit_key = client_id.strip() or "unknown"
         for event in events:
+            if not self._rate_limiter.allow(rate_limit_key, now):
+                rejected += 1
+                self.metrics.increment("ingest.rate_limited.count")
+                continue
             if not self._is_valid_event(event, now):
                 rejected += 1
                 self.metrics.increment("ingest.rejected.count")
