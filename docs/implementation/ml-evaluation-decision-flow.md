@@ -94,7 +94,7 @@ Na avaliação:
 Esses contadores ajudam a enxergar:
 
 - quantas avaliações aconteceram;
-- quantas caíram em ML versus rollout;
+- quantas caíram em machine learning versus rollout;
 - quantas liberaram a feature.
 
 Implementação atual em memória/log:

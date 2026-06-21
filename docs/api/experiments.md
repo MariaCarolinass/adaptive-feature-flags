@@ -1,6 +1,6 @@
 # `experiments`
 
-Endpoints para cadastrar, listar e acompanhar testes A/B-lite associados a uma `feature_key`.
+Endpoints para cadastrar, listar e acompanhar experimentos A/B associados a uma `feature_key`.
 
 ## Contrato geral
 
@@ -12,7 +12,7 @@ Endpoints para cadastrar, listar e acompanhar testes A/B-lite associados a uma `
 
 ## `POST /experiments`
 
-Cria um teste A/B-lite.
+Cria um experimento A/B.
 
 Request:
 

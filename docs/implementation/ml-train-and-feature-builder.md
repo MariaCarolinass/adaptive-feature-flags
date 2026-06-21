@@ -85,7 +85,7 @@ Os conjuntos vêm de `app/core/event_types.py`, que normaliza os valores definid
 
 ### 2.1 O que cada grupo significa
 
-| Grupo | Papel no produto | Exemplos | Uso na ML |
+| Grupo | Papel no produto | Exemplos | Uso em machine learning |
 | --- | --- | --- | --- |
 | `VIEW_EVENT_TYPES` | exposição / awareness | `view`, `checkout_upsell_shown`, `onboarding_step_shown` | vira `is_view` e alimenta `view_events` |
 | `INTERMEDIATE_POSITIVE_EVENT_TYPES` | interesse no meio do funil | `checkout_upsell_clicked`, `pricing_details_opened`, `hero_cta_clicked` | vira `is_intermediate_positive` e alimenta `cart_events` |

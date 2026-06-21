@@ -91,7 +91,7 @@ python3 scripts/test_model.py \
   --rollout-percentage 10
 ```
 
-- Saída principal: acurácia, taxa positiva de machine learning versus rollout e métricas de negócio (`ML Engagement`, `Rollout Engagement`, `Uplift`).
+- Saída principal: acurácia, taxa positiva de machine learning versus rollout e métricas de negócio (`Machine Learning Engagement`, `Rollout Engagement`, `Uplift`).
 
 ## Variáveis de ambiente
 

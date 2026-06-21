@@ -1,6 +1,6 @@
 # Fluxo Técnico de Experimentação e A/B
 
-Este documento descreve como o MVP implementa experimentos A/B-lite hoje: criação, atribuição de variante, gravação de eventos e avaliação do resultado.
+Este documento descreve como o MVP implementa experimentos A/B hoje: criação, atribuição de variante, gravação de eventos e avaliação do resultado.
 
 ## 1) Visão geral
 

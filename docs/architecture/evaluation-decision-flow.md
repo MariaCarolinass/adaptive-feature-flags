@@ -81,7 +81,7 @@ Isso garante consistência: mesmo par `(user_id, feature_key)` mantém a mesma d
 
 ## Como o threshold é escolhido
 
-O threshold usado em ML depende de `ml_threshold_mode`:
+O threshold usado em machine learning depende de `ml_threshold_mode`:
 
 - `fixed`: usa `ml_threshold_value`.
 - `match_rollout`: aproxima o corte para manter a cobertura do rollout.

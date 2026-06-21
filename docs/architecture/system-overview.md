@@ -15,7 +15,7 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 - API FastAPI (`app/main.py`, `app/api/v1/routes`).
 - Catálogo de atividades (`app/api/v1/routes/activities.py`).
 - Feature flags e configuração de rollout (`app/api/v1/routes/features.py`).
-- Experimentos A/B-lite (`app/api/v1/routes/experiments.py`).
+- Experimentos A/B (`app/api/v1/routes/experiments.py`).
 - Serviços de domínio (`app/domain/services`).
 - Repositórios SQLite (`app/infrastructure/repositories`).
 - Pipeline de machine learning (`app/infrastructure/ml`).
@@ -27,7 +27,7 @@ Objetivo principal: manter decisão de feature flag previsível e resiliente, co
 1. Eventos chegam por `POST /events` ou `POST /ingest/events`.
 2. Catálogos de atividades, features e experimentos mantêm a leitura humana e a governança dos dados.
 3. Dados persistidos alimentam o treino via `POST /train`.
-4. `POST /evaluate` decide `enabled=true/false` por usuário usando ML quando disponível.
+4. `POST /evaluate` decide `enabled=true/false` por usuário usando machine learning quando disponível.
 5. Se machine learning não estiver pronto/válido, aplica rollout determinístico.
 
 ```mermaid
@@ -40,7 +40,7 @@ flowchart LR
     A --> G[POST /evaluate]
     D --> G
     F --> G
-    G --> H{Modelo pronto e feature permite ML?}
+G --> H{Modelo pronto e feature permite machine learning?}
     H -- Sim --> I[Decisão por machine learning]
     H -- Não --> J[Fallback rollout determinístico]
 ```

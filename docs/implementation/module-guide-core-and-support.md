@@ -6,7 +6,7 @@ Este guia explica o papel dos módulos que hoje parecem "secundários", mas são
 
 Papel:
 
-- Centraliza a normalização dos tipos de evento usados pelo pipeline de ML.
+- Centraliza a normalização dos tipos de evento usados pelo pipeline de machine learning.
 
 Como funciona:
 

@@ -20,7 +20,7 @@ flowchart LR
     D --> F[(model_training_runs)]
     E --> G[Avaliação /evaluate]
     C --> G
-    G --> H[Decisão por ML]
+G --> H[Decisão por machine learning]
     G --> I[Fallback rollout]
 ```
 

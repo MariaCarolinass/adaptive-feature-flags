@@ -112,7 +112,7 @@ Armazena as feature flags cadastradas na plataforma.
 | `description` | `string(500)` | opcional | Descrição funcional da feature |
 | `enabled` | `bool` | não nulo | Define se a feature está ativa |
 | `rollout_percentage` | `int` | não nulo | Percentual de rollout determinístico |
-| `ml_enabled` | `bool` | não nulo | Habilita decisão por ML |
+| `ml_enabled` | `bool` | não nulo | Habilita decisão por machine learning |
 | `ml_threshold_mode` | `string(30)` | não nulo | Política de threshold da decisão |
 | `ml_threshold_value` | `float` | não nulo | Threshold fixo quando aplicável |
 | `created_at` | `datetime` | não nulo | Data de criação |
@@ -162,7 +162,7 @@ Registra o histórico de decisões produzidas pelo endpoint `/evaluate`.
 | `score` | `float` | opcional | Score do modelo quando disponível |
 | `threshold` | `float` | opcional | Threshold usado na decisão |
 | `threshold_mode` | `string(30)` | opcional | Modo de threshold aplicado |
-| `experiment` | `json` | opcional | Contexto A/B-lite associado |
+| `experiment` | `json` | opcional | Contexto de experimento associado |
 | `model_version` | `string(50)` | opcional | Versão do modelo usado |
 | `created_at` | `datetime` | não nulo, índice | Momento em que a decisão foi registrada |
 
@@ -195,7 +195,7 @@ Guarda o histórico de execuções de treino para governança e auditoria.
 
 ### 7. `experiments`
 
-Registra experimentos A/B-lite associados a uma feature.
+Registra experimentos A/B associados a uma feature.
 
 | Atributo | Tipo | Restrições | Finalidade |
 | --- | --- | --- | --- |
@@ -226,6 +226,6 @@ Se o objetivo for entender rapidamente o banco do projeto, a sequência mais út
 1. `features` define o que pode ser ativado.
 2. `activities` define os eventos legíveis pela UI e pelo catálogo.
 3. `events` registra o comportamento dos usuários.
-4. `model_metadata` e `model_training_runs` guardam o estado do ML.
+4. `model_metadata` e `model_training_runs` guardam o estado do machine learning.
 5. `evaluations` registra cada decisão individual.
-6. `experiments` complementa o sistema com A/B-lite.
+6. `experiments` complementa o sistema com experimentos A/B.

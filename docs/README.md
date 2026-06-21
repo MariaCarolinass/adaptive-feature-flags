@@ -4,19 +4,12 @@ Este diretório organiza a documentação em produto, arquitetura, API, decisõe
 
 ## Comece por aqui
 
-- Visão do projeto e escopo MVP: `product/mvp-product-vision.md`
-- Visão técnica do sistema: `architecture/system-overview.md`
-- Esquema do banco de dados: `architecture/database-schema.md`
+- Visão do projeto e escopo MVP: `product/README.md`
+- Visão técnica do sistema: `architecture/README.md`
 - Contratos da API: `api/README.md`
 - Decisões técnicas (ADRs): `decisions/README.md`
-- Implementações críticas de código: `implementation/critical-code-paths.md`
-- Fluxo detalhado de machine learning e avaliação: `implementation/ml-decision-flow-in-depth.md`
-- Fluxo técnico de experimentação e A/B: `implementation/experiment-decision-flow.md`
-- Guia de módulos de suporte (core/integrations/observability/sdk): `implementation/module-guide-core-and-support.md`
-- SDK e exemplos de integração: `implementation/sdk-and-examples.md`
-- Operação local e rotina de desenvolvimento: `operations/development-playbook.md`
-- Guia da interface web: `operations/ui-dashboard.md`
-- Vocabulário padrão da interface: `operations/ui-vocabulary.md`
+- Implementações críticas de código: `implementation/README.md`
+- Operação local e rotina de desenvolvimento: `operations/README.md`
 - Roadmap incremental: `roadmap.md`
 
 ## Estrutura

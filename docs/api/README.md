@@ -1,43 +1,21 @@
-# API Reference
+# API
 
-Documentação funcional dos endpoints expostos pela API.
+Esta pasta reúne a documentação técnica dos endpoints da aplicação: contratos, exemplos e comportamento esperado.
 
-## Índice
+## Comece por aqui
 
-- `health-and-root.md`
-- `features.md`
-- `activities.md`
-- `events-and-ingest.md`
-- `evaluation.md`
-- `evaluations.md`
-- `training-and-model-status.md`
-- `experiments.md`
+- Índice geral da documentação: `../README.md`
+- Health check e rota raiz: `health-and-root.md`
+- Atividades: `activities.md`
+- Avaliações: `evaluations.md`
+- Avaliação de uma feature: `evaluation.md`
+- Eventos e ingestão: `events-and-ingest.md`
+- Features: `features.md`
+- Experimentos: `experiments.md`
+- Treino e status do modelo: `training-and-model-status.md`
 
-## Convenções
+## O que esta pasta cobre
 
-- Base URL local: `http://localhost:8000`
-- Formato padrão: `application/json`
-- Erro interno padrão: `500 {"detail":"Internal server error."}`
-
-## Autenticação
-
-Se `AUTH_ENABLED=true`, os endpoints protegidos exigem JWT bearer token.
-
-- Header aceito:
-  - `Authorization: Bearer <sua-chave>`
-
-Paths isentos por padrão:
-
-- `/`
-- `/health`
-- `/auth/token`
-- `/docs`
-- `/redoc`
-- `/openapi.json`
-
-Emissão de token:
-
-- `POST /auth/token` com payload:
-  - `issuer_key`
-  - `subject` (opcional)
-  - `expires_minutes` (opcional)
+- Formato dos requests e responses.
+- Regras de validação e erros.
+- Exemplos de uso para integração com a UI, SDK e clientes externos.
