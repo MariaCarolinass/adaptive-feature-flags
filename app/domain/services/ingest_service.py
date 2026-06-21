@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from threading import Lock
 
 from app.core.exceptions import ValidationError
+from app.domain.entities.event import Event
 from app.domain.services.experiment_service import ExperimentService
 from app.domain.services.event_service import EventService
 from app.schemas.event_ingest import MAX_INGEST_BATCH_SIZE
@@ -47,7 +48,14 @@ class IngestService:
         self.metrics = metrics or NoopMetricsSink()
         self._rate_limiter = _SlidingWindowRateLimiter(rate_limit_max_events, rate_limit_window_seconds)
 
-    def ingest_events(self, *, source: str, events: list[dict], client_id: str = "unknown") -> dict[str, int]:
+    def ingest_events(
+        self,
+        *,
+        source: str,
+        events: list[dict],
+        client_id: str = "unknown",
+        dedupe_existing: bool = False,
+    ) -> dict[str, int]:
         if not source.strip():
             raise ValidationError("source must not be empty.")
         if not events:
@@ -68,27 +76,48 @@ class IngestService:
                 rejected += 1
                 self.metrics.increment("ingest.rejected.count")
                 continue
-            if self._experiment_service is not None:
-                context = self._experiment_service.maybe_build_context(
-                    feature_key=str(event["feature_key"]),
-                    user_id=str(event["user_id"]),
-                )
-                if context is not None:
-                    event_properties = dict(event["properties"])
-                    event_properties["ab_variant"] = context["variant"]
-                    event["properties"] = event_properties
-            self._event_service.create_event(
+            self._persist_event(
                 source=source,
-                user_id=event["user_id"],
-                feature_key=event["feature_key"],
-                event_type=event["event_type"],
-                timestamp=event["timestamp"],
-                properties=event["properties"],
+                event=event,
+                dedupe_existing=dedupe_existing,
             )
             saved += 1
             self.metrics.increment("ingest.saved.count")
         self.metrics.gauge("ingest.rejection_rate", rejected / max(len(events), 1))
         return {"saved_events": saved, "rejected": rejected}
+
+    def _persist_event(self, *, source: str, event: dict, dedupe_existing: bool) -> Event:
+        merged_properties = dict(event["properties"])
+        if self._experiment_service is not None:
+            context = self._experiment_service.maybe_build_context(
+                feature_key=str(event["feature_key"]),
+                user_id=str(event["user_id"]),
+            )
+            if context is not None:
+                merged_properties["ab_variant"] = context["variant"]
+                merged_properties["experiment_id"] = context["experiment_id"]
+                merged_properties["experiment_name"] = context["experiment_name"]
+
+        if dedupe_existing:
+            return self._event_service.create_event(
+                source=source,
+                user_id=event["user_id"],
+                feature_key=event["feature_key"],
+                event_type=event["event_type"],
+                timestamp=event["timestamp"],
+                properties=merged_properties,
+            )
+
+        persisted = Event(
+            id=None,
+            source=source,
+            user_id=event["user_id"],
+            feature_key=event["feature_key"],
+            event_type=event["event_type"],
+            timestamp=event["timestamp"],
+            properties=merged_properties,
+        )
+        return self._event_service.event_repository.create(persisted)
 
     @staticmethod
     def _is_valid_event(event: dict, now: datetime) -> bool:
