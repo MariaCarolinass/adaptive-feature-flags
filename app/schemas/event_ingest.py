@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 EventPropertyValue = str | int | float | bool | None
+MAX_INGEST_BATCH_SIZE = 1000
 
 
 class CanonicalEventItemIngest(BaseModel):
@@ -38,7 +39,11 @@ class CanonicalEventBatchIngest(BaseModel):
         max_length=100,
         description="Identificador da origem da atividade, independente do formato do sistema externo.",
     )
-    events: list[CanonicalEventItemIngest] = Field(min_length=1, max_length=5000)
+    events: list[CanonicalEventItemIngest] = Field(
+        min_length=1,
+        max_length=MAX_INGEST_BATCH_SIZE,
+        description=f"Lista de atividades em lote. Limite máximo de {MAX_INGEST_BATCH_SIZE} itens por requisição.",
+    )
 
     model_config = ConfigDict(
         json_schema_extra={
