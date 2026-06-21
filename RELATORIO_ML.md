@@ -552,6 +552,11 @@ Na execução atual, o modelo selecionado foi `logistic_regression`, versão `v7
 | ---: | ---: | ---: | ---: |
 | 16 | 4 | 8 | 23 |
 
+- TP e TN são acertos.
+- FP e FN são erros.
+- FP significa liberar feature para quem não deveria.
+- FN significa deixar de liberar para quem poderia receber.
+
 ## Interpretação dos resultados
 
 A `LogisticRegression` foi escolhida porque apresentou o melhor `f1_score` e também o melhor `roc_auc` entre os três modelos. Isso indica que ela separou melhor as classes positivas e negativas na base atual.
