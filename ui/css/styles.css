@@ -145,6 +145,11 @@ textarea {
   transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
 }
 
+input[type="number"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #8798a8;
@@ -984,14 +989,22 @@ tbody tr:hover {
   letter-spacing: 0.01em;
 }
 
+.action-status,
 .event-action-status {
   margin-top: 10px;
 }
 
+.action-status[data-tone="info"],
+.event-action-status[data-tone="info"] {
+  color: var(--muted);
+}
+
+.action-status[data-tone="ok"],
 .event-action-status[data-tone="ok"] {
   color: var(--success, #0f8a52);
 }
 
+.action-status[data-tone="bad"],
 .event-action-status[data-tone="bad"] {
   color: var(--danger, #cb3748);
 }
