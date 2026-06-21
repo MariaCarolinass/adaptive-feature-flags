@@ -42,6 +42,8 @@ Lista atividades com filtros opcionais:
 ## `POST /ingest/events`
 
 Ingressa um lote de atividades.
+O lote aceita até `1000` eventos por requisição.
+A API também aplica limite de taxa por cliente/IP para evitar abuso por várias requisições pequenas.
 
 Request:
 
@@ -86,6 +88,8 @@ Response:
 
 - `source` não pode estar vazio.
 - O lote deve conter ao menos um evento.
+- O lote não pode exceder `1000` eventos.
+- A API aplica limite de taxa por cliente/IP para bloquear abuso repetido.
 - `user_id`, `feature_key` e `event_type` não podem estar vazios.
 - `properties` deve ser um objeto.
 - `timestamp` deve ser `datetime` com timezone.
