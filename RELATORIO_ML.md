@@ -484,7 +484,7 @@ As fórmulas centrais são:
 
 O A/B entra como uma camada complementar de leitura do produto. Enquanto o modelo supervisionado decide a liberação por usuário, o experimento compara variantes de uma mesma feature para responder se uma mudança específica performa melhor que a outra.
 
-# Experimentos (Opcional)
+# Experimentos
 
 ## Tipos de testes executados
 
